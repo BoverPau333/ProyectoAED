@@ -1,0 +1,264 @@
+---
+# El segmento entre --- se denomina cabecera YALM y determina el formato y tipo de documento generado
+# Las opciones dependen del tipo de documento que se quiera generar
+# Ver https://bookdown.org/yihui/rmarkdown/ 
+
+title: "Pon un título a tu documento"
+subtitle: Tratamiento de Datos. Grado en Ciencia de Datos- UV
+author: "Pon aquí tu nombre y apellidos"
+#Pone la fecha de generación del documento
+date:  "`r Sys.Date()`"  #Pondría la fecha del día actual
+# Para que en lugar de "Contents" ponga "Indice" al incluir la tabla de contenido
+
+params:
+  lang: ES
+lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+
+# Por defecto se generará un salida html
+# Si si quieres otras salidas o varias de ellas descomenta lo que proceda
+output:
+# Salida pdf. Si se incluye código en LaTex necesitarás tener instalado un compilador de Latex
+# pdf_document:
+#   toc: yes      # Tabla de contenido (índice)
+#   toc_depth: 3  # Número de niveles de la tabla de contenido (índice) # 1, ##2,###3
+#    number_sections: yes # Numeración de las secciones
+# Salida html, 
+  html_document:
+    echo: yes
+    number_sections: yes
+    theme: cerulean    # Aspecto y estilo,otras opciones: cerulean, journal, flatly, darkly, readable, spacelab, united, cosmo, lumen, paper, sandstone, simplex, and yeti 
+    toc: yes
+# Salida html_notebook, como html, pero con algunas opciones de visualización
+  html_notebook:
+    echo: yes
+    number_sections: yes
+    toc: yes
+# Esto nos permite traducir estas etiquetas para que aparezcan en otro idioma en caso de que se usen en el documento para referenciar a figuras, tablas, etc
+language:
+  label:
+    fig: 'Figura '
+    tab: 'Tabla '
+    eq: 'Ecuación '
+    thm: 'Teorema '
+    lem: 'Lema '
+    def: 'Definición '
+    cor: 'Corolario '
+    prp: 'Proposición '
+    exm: 'Ejemplo '
+    exr: 'Ejercicio '
+    proof: 'Demostración. '
+    remark: 'Nota: '
+    solution: 'Solución. '
+---
+
+# Introducción
+
+Este documento explicativo te puede servir de plantilla para la realización de proyectos con *Rmarkdown* para la realizacón de memorias de práctica, tareas, etc. Pretende ser autoexplicativo.
+
+# Estructura del fichero
+
+El bloque inicial separado entre 3 guiones, se denomina cabecera YALM y determina el formato y tipo de documento generado Las opciones dependen del tipo de documento. Un documento que te ayudará a opciones más complejas lo puedes encontrar en este enlace <https://bookdown.org/yihui/rmarkdown/>
+
+**NOTA**: Los espacios iniciales son imprescindibles. El documento debe empezar por los guiones (no puede haber comentarios previos)
+
+**title**: "Pon un título a tu documento"\
+**subtitle**: Tratamiento de Datos. Grado en Ciencia de Datos- UV\
+**author**: "Pon aquí tu nombre y apellidos"
+
+Pone la fecha de generación del documento
+
+**date**: "`r Sys.Date()`" Pondría la fecha del día actual. También se puede poner fija "01/02/2021"
+
+Cambio de idioma para que en lugar de "Contents" ponga "Indice" al incluir la tabla de contenido
+
+**params**: **lang**: ES\
+**lang**: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+
+En este ejemplo, por defecto se generará un salida html, que es la que está descomentada. Si si quieres otras salidas o varias de ellas descomenta lo que proceda
+
+**output:** Salida(s) generadas
+
+[*Salida pdf*]{.underline}*. Si se incluye código en LaTex necesitarás tener instalado un compilador de Latex*\
+**pdf_document**:\
+**toc**: yes Tabla de contenido (índice)\
+**toc_depth**: 3 Número de niveles de la tabla de contenido (índice) \# 1, ##2,###3\
+**number_sections**: yes Numeración de las secciones
+
+[Salida html_document]{.underline}:\
+**echo**: yes **number_sections**: yes\
+**theme**: lumen Aspecto y estilo. Otras opciones: *cerulean, journal, flatly, darkly, readable, spacelab, united, cosmo, lumen, paper, sandstone, simplex, and yeti*\
+**toc**: yes
+
+[*Salida html_notebook*]{.underline}*, como html, pero con algunas opciones de visualización*
+
+Las opciones siguientes nos permite traducir estas etiquetas para que aparezcan en otro idioma en caso de que se usen en el documento para referenciar a figuras, tablas, etc.
+
+**language:**\
+**label:** **fig:** 'Figura '\
+**tab:** 'Tabla '\
+**eq:** 'Ecuación '\
+**thm:** 'Teorema '\
+**lem:** 'Lema '\
+**def:** 'Definición '\
+**cor:** 'Corolario '\
+**prp:** 'Proposición '\
+**exm:** 'Ejemplo '\
+**exr:** 'Ejercicio '\
+**proof:** 'Demostración. '\
+**remark:** 'Nota: '\
+**solution:** 'Solución. '
+
+# Configuración del los bloques (*Chunks*)
+
+Cada bloque tiene muchos parámetros que pueden ser configurados
+
+**include** = **FALSE** evita que el código y los resultados aparezcan en el archivo terminado. R Markdown aún ejecuta el código en el fragmento y los resultados pueden ser utilizados por otros fragmentos.
+
+**echo = FALSE** evita que el código, pero no los resultados, aparezcan en el archivo terminado. Esta es una manera útil de incrustar figuras.
+
+**message = FALSE** evita que los mensajes generados por el código aparezcan en el archivo finalizado.
+
+**warning = FALSE** evita que las advertencias generadas por el código aparezcan en el final.
+
+**fig.cap = "..."** agrega un título a los resultados gráficos.
+
+Se pueden especificicar opciones generales por defecto en *opts_chunk\$set*
+
+Más opciones en el enlace [\<https://bookdown.org/yihui/rmarkdown/\>](https://bookdown.org/yihui/rmarkdown/){.uri}
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+
+
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+
+# Opciones generales de los chucks. Se utilizarán salvo cambios en el chunk
+opts_chunk$set(echo=F, message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 200, tidy = F, cache.path = '.cache/', fig.path = './figura/')
+
+# Opciones generales de dígitos cuando se incluyen tablas
+#options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+#knit_hooks$set(plot = knitr:::hook_plot_html)
+```
+
+# Instalación automática de paquetes
+
+Especificar las librerías necesarias para ejecutar el código en la variable ***packages***. Si no está instaladas, se instalarán y cargarán (solo para aquellas que están en el repositorio <http://cran.rediris.es>)
+
+El siguiente bloque, al no especificar opciones del *chunk* usa la configuración por defecto.
+
+```{r}
+
+# Especificamos las librerías necesarias en esta lista
+
+packages = c("tidyverse","knitr")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE,repos='http://cran.rediris.es')
+  }
+  library(x, character.only = TRUE)
+})
+
+#verify they are loaded
+search()
+
+```
+
+# Trabaja proyectos.
+
+Para cada tarea crea un nuevo proyecto con, al menos, una carpeta *./data*, que contenga los datos (puedes usar carpetas adicionales para organizar la información **./program, /figuras**, etc). (La carpeta donde se encuentra este fichero es un proyecto)
+
+# Introducción del trabajo
+
+Haz un breve introducción indicando el contenido del documento:
+
+" El objetivo de esta *tarea/trabajo/práctica* es ... bla bla bla "
+
+## Subapartado (nivel 2 \##). Rutas locales
+
+Usa rutas referidas a la carpeta en la que se encuentra el fichero fuente, y siempre rutas **relativas** a dicha ubicación. Ejemplos
+
+**ruta1\<-'data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga del directorio donde está el código.
+
+**ruta2\<-'./data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de un nivel superior
+
+**ruta3\<-'../data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de dos niveles superiores
+
+**ruta4\<-'./../data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de tres niveles superiores
+
+<font color=red size=4>ruta5\<-'C:/MisDatos/Ej.txt' </font> **NO USAR NUNCA UNA RUTA ABSOLUTA COMO ESTA**
+
+### Subsubapartado (nivel 3 \###). Cómo incluir figuras
+
+Podemos especificar parámetros de tamaño y ubicación en el *chunk*
+
+```{r rmarkdown, echo=FALSE,include=FALSE, out.width='30%', fig.align='center', fig.cap='Logo ETSE (desde archivo PNG).'}
+knitr::include_graphics("figure/logoETSE.png")
+```
+
+### Subsubapartado (nivel 3 \###).
+
+En este caso visualizamos el código. Observa como podemos incluir una figura y también ponerle un titulo
+
+```{r rmarkdown2, echo=TRUE, out.width='20%', fig.align='center', fig.cap='Logo GCD (desde archivo png).'}
+knitr::include_graphics("figure/logoEtse.png")
+```
+
+# Inclusión de ecuaciones
+
+Puedes incluir expresiones matemática usando la nomenclatura LaTeX por ejemplo:
+
+$ax^2+bx+c=0$
+
+### Subsubapartado (nivel 3 \###).
+
+```{r newFig, echo=TRUE, out.width='40%', fig.align='center', fig.cap='Histograma.'}
+
+hist(rnorm(100000),breaks=100)
+
+```
+
+# Nuevo apartado nivel I \#
+
+Compila el proyecto como **pdf** y como **html** y observa el fichero obtenido. Cuando generes el documento **html**, observa el efecto de cambiar el valor **theme** por algún otro. Ten en cuenta que este parámetro solo se puede usar la salida **html**.
+
+```{r}
+
+# Creamos la carpeta donde guardaremos los datos
+dir.create("data", showWarnings = FALSE)
+
+# Descargamos el archivo comprimido del dataset desde UCI.
+download.file(
+  url = "https://archive.ics.uci.edu/static/public/373/drug+consumption+quantified.zip",
+  destfile = "data/drug_consumption.zip",
+  mode = "wb"
+)
+
+
+# Extraemos los archivos en la carpeta data.
+unzip("data/drug_consumption.zip", exdir = "data")
+
+# Importamos los datos: están separados por comas y no tienen cabecera.
+datos <- read.csv(
+  "data/drug_consumption.data",
+  header = FALSE,
+  stringsAsFactors = FALSE
+)
+
+head(datos)
+
+```
+
+# 
