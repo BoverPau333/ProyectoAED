@@ -111,6 +111,12 @@ Podemos observar que, entre las distintas variables que caracterizan cada uno de
 Por ello, corregimos a `impulsive`.
 
 ```{r}
-datos <- datos %>% rename(impulsive = impuslive)
+datos <- rename(datos, impulsive = impuslive)
 datos["impulsive"]
 ```
+
+```{r}
+colSums(is.na(datos))
+anyDuplicated(datos$id)
+```
+
