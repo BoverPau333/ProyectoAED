@@ -37,7 +37,7 @@ language:
 
 # Introducción
 
-# Instalación automática de paquetes
+# Instalación de paquetes necesarios
 
 En el siguiente bloque instalamos las librerias necesarias.
 
@@ -59,8 +59,9 @@ package.check <- lapply(packages, FUN = function(x) {
 
 #verify they are loaded
 search()
-
 ```
+
+# Obtención de datos
 
 ## Descarga de datos
 
@@ -89,6 +90,7 @@ datos <- read.csv(
 
 head(datos)
 ```
+## Metadatos
 
 ```{r}
 metadatos <- jsonlite::fromJSON(
@@ -106,6 +108,8 @@ names(datos) <- nombres
 head(datos)
 ```
 
+# Preprocesamiento de datos
+
 Podemos observar que, entre las distintas variables que caracterizan cada uno de los registros recogidos en el dataset, la variable `impuslive` refiere a la impulsividad. No obstante, el nombre cuenta con un fallo ortografico que la hace no ser lo suficientemente representativa, dando lugar a problemas de interpretación.
 
 Por ello, corregimos a `impulsive`.
@@ -115,8 +119,8 @@ datos <- rename(datos, impulsive = impuslive)
 datos["impulsive"]
 ```
 
-```{r}
-colSums(is.na(datos))
-anyDuplicated(datos$id)
-```
+# Análisis exploratorio
+
+
+# Conclusiones
 
