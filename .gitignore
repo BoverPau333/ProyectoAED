@@ -52,3 +52,6 @@ rsconnect/
 
 # data
 data/
+
+#archivos de compilacion
+*.nb.html
