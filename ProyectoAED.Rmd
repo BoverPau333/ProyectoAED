@@ -88,7 +88,6 @@ datos <- read.csv(
 )
 
 head(datos)
-
 ```
 
 ```{r}
@@ -96,16 +95,22 @@ metadatos <- jsonlite::fromJSON(
   "https://archive.ics.uci.edu/api/dataset?id=373"
 )
 
+metadatos
+```
 
+```{r}
 nombres <- metadatos$data$variables$name
-
 stopifnot(length(nombres) == ncol(datos))
-
 names(datos) <- nombres
 
 head(datos)
 ```
 
+Podemos observar que, entre las distintas variables que caracterizan cada uno de los registros recogidos en el dataset, la variable `impuslive` refiere a la impulsividad. No obstante, el nombre cuenta con un fallo ortografico que la hace no ser lo suficientemente representativa, dando lugar a problemas de interpretación.
+
+Por ello, corregimos a `impulsive`.
+
 ```{r}
-metadatos
+datos <- datos %>% rename(impulsive = impuslive)
+datos["impulsive"]
 ```
