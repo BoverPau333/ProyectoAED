@@ -35,8 +35,6 @@ language:
     solution: 'Solución. '
 ---
 
-# Introducción
-
 # Instalación de paquetes necesarios
 
 En el siguiente bloque instalamos las librerias necesarias.
@@ -45,7 +43,7 @@ En el siguiente bloque instalamos las librerias necesarias.
 
 # Especificamos las librerías necesarias en esta lista
 
-packages = c("tidyverse","knitr")
+packages = c("tidyverse","knitr", "rvest")
 
 #use this function to check if each package is on the local machine
 #if a package is installed, it will be loaded
@@ -90,6 +88,7 @@ datos <- read.csv(
 
 head(datos)
 ```
+
 ## Metadatos
 
 ```{r}
@@ -119,8 +118,50 @@ datos <- rename(datos, impulsive = impuslive)
 datos["impulsive"]
 ```
 
+
+```{r}
+url <- "https://www.gov.scot/publications/understanding-patterns-use-motives-harms-new-psychoactive-substances-scotland/pages/3/"
+
+tables <- html_table(
+  html_elements(read_html(url), "table"),
+  header = TRUE
+)
+
+classification <- tables[[1]]
+head(classification$Name)
+```
+
+```{r}
+families <- classification$Name
+families <- c(families, "Other", "Fake" )
+
+substances <- names(datos)[14:32]
+
+uci_classification <- data.frame(
+  substance = substances,
+  family = families[c(
+    2, 7, 7, 2, 7, 1, 7, 7, 7, 4,
+    5, 3, 8, 6, 5, 6, 7, 9, 2
+  )]
+)
+
+table(uci_classification$family)
+```
+
+```{r}
+datos_families <- datos %>%
+  pivot_longer(
+    cols = all_of(uci_classification$substance),
+    names_to = "substance",
+    values_to = "consumption"
+  ) %>%
+  left_join(uci_classification, by = "substance")
+
+str(datos_families)
+```
+
+
+  
 # Análisis exploratorio
 
-
 # Conclusiones
-
