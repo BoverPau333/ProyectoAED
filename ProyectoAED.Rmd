@@ -45,7 +45,7 @@ En el siguiente bloque instalamos las librerias necesarias.
 
 # Especificamos las librerías necesarias en esta lista
 
-packages = c("tidyverse","knitr")
+packages = c("tidyverse","knitr", "dplyr")
 
 #use this function to check if each package is on the local machine
 #if a package is installed, it will be loaded
@@ -118,6 +118,116 @@ Por ello, corregimos a `impulsive`.
 datos <- rename(datos, impulsive = impuslive)
 datos["impulsive"]
 ```
+
+
+Pasamos a factores para poder interpretar los valores. Usamos los datos proporcionados en la web de UCI.
+
+```{r}
+datos <- datos %>%
+  mutate(
+    age = factor(age,
+                 levels = sort(unique(age)),
+                 labels = c("18-24", "25-34", "35-44", "45-54", "55-64", "65+"),
+                 ordered = TRUE),
+
+    gender = factor(gender,
+                    levels = sort(unique(gender)),
+                    labels = c("Male", "Female")),
+
+    education = factor(education,
+                       levels = sort(unique(education)),
+                       labels = c("<16 years", "16 years", "17 years", "18 years",
+                                  "Some college", "Prof. certificate",
+                                  "Bachelor's", "Master's", "Doctorate"),
+                       ordered = TRUE),
+
+    country = factor(country,
+                     levels = sort(unique(country)),
+                     labels = c("USA", "New Zealand", "Other",
+                                "Australia", "Ireland", "Canada", "UK")),
+
+    ethnicity = factor(ethnicity,
+                       levels = sort(unique(ethnicity)),
+                       labels = c("Black", "Asian", "White",
+                                  "White-Black", "Other",
+                                  "White-Asian", "Black-Asian"))
+  )
+lapply(datos[c("age", "gender", "education", "country", "ethnicity")], table)
+```
+```{r}
+variables_consumo <- c(
+  "alcohol", "amphet", "amyl", "benzos", "caff",
+  "cannabis", "choc", "coke", "crack", "ecstasy",
+  "heroin", "ketamine", "legalh", "lsd", "meth",
+  "mushrooms", "nicotine", "semer", "vsa"
+)
+
+datos <- datos %>%
+  mutate(across(all_of(variables_consumo),
+                ~ factor(.x,
+                         levels = paste0("CL", 0:6),
+                         labels = c("Never", ">10 years ago", "Last 10 years",
+                                    "Last year", "Last month", "Last week", "Last day"),
+                         ordered = TRUE)))
+
+table(datos$alcohol)
+```
+```{r}
+datos %>%
+  select(impulsive, ss) %>%
+  summary()
+
+sort(unique(datos$impulsive))
+sort(unique(datos$ss))
+```
+
+Lo hacemos así porque como hay algunas puntuaciones que no aparecen y la cuantización esta hecha sin tener en cuenta esos valores, si hacemos una transformacin lineal no nos funciona bien.
+```{r}
+big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
+
+# Puntuaciones originales publicadas por UCI teniendo en cuenta los faltantes
+scores <- list(
+  nscore = 12:60,
+  escore = c(16, 18:56, 58:59),
+  oscore = c(24, 26, 28:60),
+  ascore = c(12, 16, 18, 23:60),
+  cscore = c(17, 19:57, 59)
+)
+
+# recuperar las puntuaciones originales
+datos_exactos <- datos
+
+for (v in big_five) {
+  datos_exactos[[v]] <- scores[[v]][
+    match(datos[[v]], sort(unique(datos[[v]])))
+  ]
+}
+
+```
+
+Normalizamos entre 0 y 1 los niveles de impulsive y sensation seeking. 
+```{r}
+# Impulsivity and Sensation Seeking
+
+datos <- datos %>%
+  mutate(
+    impulsive_norm = (impulsive - min(impulsive)) /
+                     (max(impulsive) - min(impulsive)),
+
+    ss_norm = (ss - min(ss)) /
+              (max(ss) - min(ss))
+  )
+
+# Comprobar resultados
+summary(datos$impulsive_norm)
+summary(datos$ss_norm)
+
+# Validation
+table(datos$impulsive_norm)
+table(datos$ss_norm)
+
+```
+
 
 # Análisis exploratorio
 
