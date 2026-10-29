@@ -97,7 +97,7 @@ metadatos <- jsonlite::fromJSON(
   "https://archive.ics.uci.edu/api/dataset?id=373"
 )
 
-metadatos
+head(metadatos$data$variables)
 ```
 
 ```{r}
@@ -118,8 +118,6 @@ Por ello, corregimos a `impulsive`.
 datos <- rename(datos, impulsive = impuslive)
 datos["impulsive"]
 ```
-
-
 
 Pasamos a factores para poder interpretar los valores. Usamos los datos proporcionados en la web de UCI.
 
@@ -155,6 +153,7 @@ datos <- datos %>%
   )
 lapply(datos[c("age", "gender", "education", "country", "ethnicity")], table)
 ```
+
 ```{r}
 variables_consumo <- c(
   "alcohol", "amphet", "amyl", "benzos", "caff",
@@ -173,6 +172,7 @@ datos <- datos %>%
 
 table(datos$alcohol)
 ```
+
 ```{r}
 datos %>%
   select(impulsive, ss) %>%
@@ -183,6 +183,7 @@ sort(unique(datos$ss))
 ```
 
 Lo hacemos así porque como hay algunas puntuaciones que no aparecen y la cuantización esta hecha sin tener en cuenta esos valores, si hacemos una transformacin lineal no nos funciona bien.
+
 ```{r}
 big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
 
@@ -206,7 +207,8 @@ for (v in big_five) {
 
 ```
 
-Normalizamos entre 0 y 1 los niveles de impulsive y sensation seeking. 
+Normalizamos entre 0 y 1 los niveles de impulsive y sensation seeking.
+
 ```{r}
 # Impulsivity and Sensation Seeking
 
@@ -272,8 +274,6 @@ datos_families <- datos %>%
 str(datos_families)
 ```
 
-
-  
 # Análisis exploratorio
 
 # Conclusiones
