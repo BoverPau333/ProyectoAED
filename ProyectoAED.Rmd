@@ -274,6 +274,22 @@ datos_families <- datos %>%
 str(datos_families)
 ```
 
+## Analisis de Valores Atipicos
+
+```{r}
+personas_semeron <- datos_families %>%
+  filter(substance == "semer", !is.na(consumption), consumption != "Never") %>%
+  select(id, consumption)
+
+head(personas_semeron,3)
+
+```
+
+```{r}
+datos_families_sin_outliers <- datos_families %>%
+  filter(!id %in% personas_semeron$id)
+```
+
 # Análisis exploratorio
 
 # Conclusiones
