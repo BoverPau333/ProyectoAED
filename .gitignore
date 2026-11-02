@@ -55,3 +55,6 @@ data/
 
 #archivos de compilacion
 *.nb.html
+
+*.log
+*.pdf
