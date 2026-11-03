@@ -390,6 +390,36 @@ corrplot::corrplot(matriz_visual, is.corr = TRUE, col = colores(100),
 
 ```
 
+```{r}
+rasgos <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
+
+# Una columna por familia: 0 = sin consumo reciente, 1 = con consumo reciente.
+consumos_familias <- datos_consumo_familias %>%
+  select(id, family, reciente) %>%
+  mutate(reciente = as.integer(reciente)) %>%
+  pivot_wider(names_from = family, values_from = reciente)
+
+personalidad <- datos_families %>%
+  select(id, all_of(rasgos)) %>%
+  distinct()
+
+datos_cor_familias <- personalidad %>%
+  left_join(consumos_familias, by = "id") %>%
+  select(-id)
+
+correlaciones_familias <- cor(datos_cor_familias, method = "spearman",
+                              use = "complete.obs")
+familias <- setdiff(colnames(correlaciones_familias), rasgos)
+matriz_visual <- correlaciones_familias[rasgos, familias, drop = FALSE]
+
+colores <- colorRampPalette(c("red", "white", "blue"))
+
+corrplot::corrplot(matriz_visual, is.corr = TRUE, col = colores(100),
+                  method = "color", addCoef.col = "black",
+                  number.cex = 0.8, tl.col = "black", tl.srt = 45)
+```
+
+
 # Análisis exploratorio
 
 ```{r}
