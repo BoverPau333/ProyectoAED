@@ -110,7 +110,7 @@ names(datos)
 
 Podemos observar que, entre las distintas variables que caracterizan cada uno de los registros recogidos en el dataset, la variable `impuslive` refiere a la impulsividad. No obstante, el nombre cuenta con un fallo ortografico que la hace no ser lo suficientemente representativa, dando lugar a problemas de interpretación.
 
-Por ello, corregimos a `impulsive`.
+Por ello, corregimos a `impulsive` mediante la función `rename` de la biblioteca `dplyr`.
 
 ```{r}
 datos <- rename(datos, impulsive = impuslive)
