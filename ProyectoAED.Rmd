@@ -587,7 +587,7 @@ grafico_educacion
 
 ```{r}
 consumo_sustancias_educacion <- datos_consumo %>%
-  filter(substance %in% seleccion) %>%
+  filter(!substance %in% excluir_familias) %>%
   group_by(education, family, substance) %>%
   summarise(
     porcentaje = 100 * mean(reciente),
