@@ -268,6 +268,36 @@ datos_families <- datos %>%
   ) %>%
   left_join(uci_classification, by = "substance")
 
+# Consumo reciente por sustancia: conservamos esta tabla para otros análisis.
+datos_consumo <- datos_families %>%
+  filter(substance != "semer") %>%
+  distinct(id, substance, .keep_all = TRUE) %>%
+  mutate(reciente = if_else(is.na(consumption), NA,
+         as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
+
+# Mismas exclusiones que en el análisis original por nivel educativo.
+excluir_familias <- c("alcohol", "caff", "nicotine", "choc", "semer", "legalh")
+
+# Una fila por participante y familia; se consume si alguna respuesta es positiva.
+datos_consumo_familias <- datos_consumo %>%
+  filter(!substance %in% excluir_familias, !is.na(family)) %>%
+  group_by(id, age, gender, education, country, ethnicity, family) %>%
+  summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
+              else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
+
+# Resumen reutilizable para edad, género, etnia o educación.
+resumir_consumo <- function(ds, perfil, categoria) {
+  ds %>%
+    filter(!is.na(.data[[perfil]])) %>%
+    group_by(across(all_of(c(perfil, categoria)))) %>%
+    summarise(n = sum(!is.na(reciente)), consumidores = sum(reciente, na.rm = TRUE),
+              .groups = "drop") %>%
+    mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_))
+}
+
+consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
+consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
+
 str(datos_families)
 ```
 
@@ -284,34 +314,24 @@ nrow(personas_semeron)
 ```
 
 ```{r}
-datos_families_sin_outliers <- datos_families %>%
-  filter(!id %in% personas_semeron$id)
-
+datos_families_sin_outliers <- datos_families %>% filter(!id %in% personas_semeron$id)
 ```
 
 ```{r}
 variables <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
-datos_personas <- datos_families %>% distinct(id, .keep_all = TRUE)
-
-outliers <- datos_personas %>%
+# Una fila por persona y una observación por puntuación.
+outliers <- datos_families %>% distinct(id, .keep_all = TRUE) %>%
   select(id, all_of(variables)) %>%
-  pivot_longer(-id, names_to = "variable", values_to = "valor") %>%
-  group_by(variable) %>%
+  pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
   mutate(sigma_inf = mean(valor) - 3 * sd(valor), sigma_sup = mean(valor) + 3 * sd(valor),
          hampel_inf = median(valor) - 3 * mad(valor), hampel_sup = median(valor) + 3 * mad(valor),
          boxplot_inf = quantile(valor, .25) - 1.5 * IQR(valor),
-         boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>%
-  ungroup() %>%
-  pivot_longer(cols = ends_with(c("_inf", "_sup")),
-               names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>%
-  mutate(atipico = valor < inf | valor > sup)
-
+         boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>% ungroup() %>%
+  pivot_longer(cols = ends_with(c("_inf", "_sup")),names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>% mutate(atipico = valor < inf | valor > sup)
 
 # Número de outliers y límites de cada método.
-outliers %>%
-  group_by(variable, metodo) %>%
-  summarise(n_outliers = sum(atipico), inferior = first(inf),
-            superior = first(sup), .groups = "drop")
+outliers %>% group_by(variable, metodo) %>%
+  summarise(n_outliers = sum(atipico), inferior = first(inf),superior = first(sup), .groups = "drop")
 ```
 
 ```{r}
@@ -392,78 +412,86 @@ perfil_personas %>% count(ethnicity) %>%
   arrange(desc(n))
 ```
 
-```{r}
-resumir_consumo <- function(ds, perfil, categoria) {
-  ds %>%
-    filter(!is.na(.data[[perfil]])) %>%
-    group_by(across(all_of(c(perfil, categoria)))) %>%
-    summarise(n = sum(!is.na(reciente)),
-              consumidores = sum(reciente, na.rm = TRUE), .groups = "drop") %>%
-    mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_))
-}
-
-consumo_edad <- resumir_consumo(datos_consumo, "age", "substance")
+```{r warning=FALSE}
+# Género y etnia por sustancia se conservan para los gráficos posteriores.
 consumo_genero <- resumir_consumo(datos_consumo, "gender", "substance")
 consumo_etnia <- resumir_consumo(datos_consumo, "ethnicity", "substance")
 ```
 
-```{r fig.width=13, fig.height=7,warning=FALSE}
-
+```{r edad-familias, fig.width=13, fig.height=12, warning=FALSE}
 edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
-seleccion <- c("cannabis", "nicotine", "amphet", "coke", "ecstasy", "mushrooms")
-etiquetas <- c(cannabis = "Cannabis", nicotine = "Nicotina",
-               amphet = "Anfetaminas", coke = "Cocaína",
-               ecstasy = "Éxtasis", mushrooms = "Setas")
-paleta <- c("#1B9E77", "#D95F02", "#7570B3",
-            "#E7298A", "#168AAD", "#A6761D")
+paneles <- c("Cannabinoids", "Depressants", "Dissociatives", "Empathogens",
+             "Opioids", "Psychedelics", "Stimulants", "nicotine", "alcohol")
 
-lineas <- consumo_edad %>%
-  filter(substance %in% seleccion) %>%
-  mutate(x = match(as.character(age), edades))
+etiquetas <- c(Cannabinoids = "Cannabinoides", Depressants = "Depresores",
+  Dissociatives = "Disociativos", Empathogens = "Empatógenos", Opioids = "Opioides",
+  Psychedelics = "Psicodélicos", Stimulants = "Estimulantes",
+  nicotine = "Nicotina", alcohol = "Alcohol")
 
-# Calculamos las diferencias para incluirlas en los títulos.
+colores <- setNames(c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#168AAD",
+                     "#A6761D", "#666666", "#E69F00", "#0072B2"), paneles)
+
+# Nicotina y alcohol se calculan desde los datos por sustancia.
+consumo_adicional <- datos_consumo %>%
+  filter(substance %in% c("nicotine", "alcohol")) %>%
+  group_by(age, substance) %>%
+  summarise(n = sum(!is.na(reciente)), consumidores = sum(reciente, na.rm = TRUE),
+            .groups = "drop") %>%
+  mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_)) %>%
+  rename(panel = substance)
+
+# Combinamos familias y sustancias individuales únicamente para representarlas.
+lineas <- bind_rows(
+  consumo_edad_familias %>% rename(panel = family),
+  consumo_adicional
+) %>%
+  filter(panel %in% paneles) %>%
+  mutate(panel = factor(panel, levels = paneles),
+         x = match(as.character(age), edades))
+
 titulos <- lineas %>%
   filter(x %in% c(1, 6)) %>%
-  select(substance, x, porcentaje) %>%
+  select(panel, x, porcentaje) %>%
   pivot_wider(names_from = x, values_from = porcentaje, names_prefix = "edad_") %>%
-  mutate(titulo = paste0(etiquetas[substance], "\n",
-                         sprintf("65+ frente a 18–24: %+.0f p.p.", edad_6 - edad_1)))
+  mutate(titulo = paste0(etiquetas[as.character(panel)], "\n",
+         sprintf("65+ frente a 18-24: %+.0f p.p.", edad_6 - edad_1)))
 
-rotulos <- setNames(titulos$titulo, titulos$substance)
+rotulos <- setNames(titulos$titulo, as.character(titulos$panel))
+fondo <- lineas %>% rename(serie = panel)
 
-# Al no contener la variable de facetas, este fondo se repite en cada panel.
-fondo <- lineas %>% rename(serie = substance)
-
-grafico_edad <- ggplot(lineas, aes(x = x, y = porcentaje, group = substance)) +
-  geom_line(data = fondo, aes(group = serie), color = "grey85", linewidth = 0.7) +
-  geom_area(aes(fill = substance), alpha = 0.10) +
-  geom_line(aes(color = substance), linewidth = 1.3) +
-  geom_point(aes(color = substance), size = 3) +
-  geom_text(aes(label = sprintf("%.0f%%", porcentaje), color = substance),
-            vjust = -1, size = 3.3, fontface = "bold") +
-  facet_wrap(~ substance, ncol = 3, labeller = as_labeller(rotulos)) +
-  scale_color_manual(values = setNames(paleta, seleccion)) +
-  scale_fill_manual(values = setNames(paleta, seleccion)) +
+grafico_edad_familias <- ggplot(lineas, aes(x = x, y = porcentaje, group = panel)) +
+  geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.6) +
+  geom_area(aes(fill = panel), alpha = 0.10) +
+  geom_line(aes(color = panel), linewidth = 1.2) +
+  geom_point(aes(color = panel), size = 2.8) +
+  geom_text(aes(label = sprintf("%.0f%%", porcentaje), color = panel),
+            vjust = -1, size = 3.2, fontface = "bold") +
+  facet_wrap(~ panel, ncol = 3, labeller = as_labeller(rotulos)) +
+  scale_color_manual(values = colores) +
+  scale_fill_manual(values = colores) +
   scale_x_continuous(breaks = 1:6, labels = edades,
                      expand = expansion(mult = c(0.08, 0.08))) +
-  scale_y_continuous(limits = c(0, 105), breaks = c(0, 50, 100),
+  scale_y_continuous(limits = c(0, 112), breaks = seq(0, 100, 25),
                      labels = function(x) paste0(x, "%")) +
-  labs(title = "Cómo varía el consumo reciente entre grupos de edad",
-       subtitle = "Cada panel destaca una sustancia; las demás se mantienen en gris como referencia",
-       x = "Grupo de edad", y = "Consumo en los últimos 12 meses",
-       caption = "p.p.: puntos porcentuales. Grupos de personas distintos; no es un seguimiento individual.") +
+  labs(title = "Consumo reciente según el grupo de edad",
+       subtitle = "Siete familias de sustancias y dos sustancias individuales: nicotina y alcohol",
+       x = "Grupo de edad", y = "Consumo en los últimos 12 meses (%)",
+       caption = paste(
+         "Familias: excluidos alcohol, cafeína, nicotina, chocolate, Semeron y legal highs.",
+         "Nicotina y alcohol se muestran por separado. p.p.: puntos porcentuales.",
+         "Comparación entre grupos de edad; no es seguimiento individual.", sep = "\n")) +
   theme_minimal(base_size = 12) +
   theme(legend.position = "none", panel.grid.minor = element_blank(),
         panel.grid.major.x = element_blank(),
         panel.grid.major.y = element_line(color = "grey92"),
         strip.text = element_text(face = "bold", size = 11, hjust = 0),
         axis.text.x = element_text(angle = 45, hjust = 1),
-        panel.spacing = grid::unit(1.2, "lines"),
+        panel.spacing = grid::unit(1.4, "lines"),
         plot.title = element_text(face = "bold", size = 18),
         plot.subtitle = element_text(color = "grey40"),
         plot.caption = element_text(hjust = 0, color = "grey40"))
 
-grafico_edad
+grafico_edad_familias
 ```
 
 ```{r}
@@ -522,32 +550,7 @@ ggplot(resumen_etnia, aes(x = ethnicity, y = porcentaje, fill = grupo)) +
 ### ¿Cómo varía el consumo de estimulantes, depresores y psicodélicos según el nivel educativo?
 
 ```{r}
-# Sustancias que no quiero usar
-
-seleccion <- c("alcohol", "caff", "nicotine", "choc", "semer", "legalh")
-
-# Consumo reciente por grupo y nivel educativo
-consumo_educacion <- datos_consumo %>%
-  filter(!substance %in% seleccion) %>%
-  
-  # Una observación por persona y grupo
-  group_by(id, education, family) %>%
-  summarise(
-    consume = any(reciente),
-    .groups = "drop"
-  ) %>%
-  
-  # Proporción de consumidores por nivel educativo
-  group_by(education, family) %>%
-  summarise(
-    n = n(),
-    consumidores = sum(consume),
-    porcentaje = 100 * consumidores / n,
-    .groups = "drop"
-  )
-
-# Mostrar resultados
-print(consumo_educacion, n = Inf)
+print(consumo_educacion, n = 5)
 ```
 
 Hay que tener en cuenta que some college es gente que ha abandonado la carrera y gente que la sigue cursando.
@@ -584,7 +587,7 @@ grafico_educacion
 
 ```{r}
 consumo_sustancias_educacion <- datos_consumo %>%
-  filter(substance %in% seleccion) %>%
+  filter(!substance %in% excluir_familias) %>%
   group_by(education, family, substance) %>%
   summarise(
     porcentaje = 100 * mean(reciente),
