@@ -194,11 +194,10 @@ scores <- list(
   cscore = c(17, 19:57, 59)
 )
 
-# recuperar las puntuaciones originales
-datos_exactos <- datos
+# recuperar las puntuaciones originales sin transformación lineal, asi obtenemos exactamente los valores originales
 
 for (v in big_five) {
-  datos_exactos[[v]] <- scores[[v]][
+  datos[[v]] <- scores[[v]][
     match(datos[[v]], sort(unique(datos[[v]])))
   ]
 }
@@ -337,7 +336,7 @@ outliers %>% group_by(variable, metodo) %>%
 
 ```{r}
 outliers %>%
-  filter(variable == "nscore") %>%
+  filter(variable == "escore") %>%
   mutate(grupo = case_when(
     id %in% personas_semeron$id ~ "Declara Semeron",
     atipico ~ "Atípico",
