@@ -615,4 +615,111 @@ ggplot(consumo_sustancias_educacion,
   )
 ```
 
+### ¿La impulsividad y la búsqueda de sensaciones distinguen a quienes consumen una sola sustancia de quienes consumen varias?
+
+Al igual que en fases anteriores del análisis, para el estudio de la relación entre el policonsumo y los rasgos psicológicos se excluyen sustancias adictivas que, tanto hombres como mujeres, han mostrado un consumo lo suficientemente elevado como para no ser informativo al compararlo con el resto.
+
+En este caso, se elimina el alcohol, la cafeina, el chocolate y el semeron. De esta manera, calculamos el nimero de sustancias diferentes consumidas por cada participante, conservando sus puntuaciones de impulsividad (`impulsive`) y búsqueda de sensaciones (`ss`).
+
+```{r}
+datos_sensaciones <- datos_families %>% 
+  filter(!substance %in% c("alcohol", "caff", "choc", "semer")) %>%
+  mutate(reciente = if_else(is.na(consumption), NA,
+                            as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
+
+
+policonsumo <- datos_sensaciones %>%
+  group_by(id) %>%
+  summarise(
+    n_sustancias = sum(reciente),
+    impulsive = first(impulsive),
+    cscore = first(cscore),
+    ss = first(ss)
+  )
+
+summary(policonsumo)
+```
+
+El resumen estadístico del conjunto de datos preparado para el análisis muestra que, aproximadamente, la media de sustancias consumidas por persona, tomando como referencia los datos recogidos, es 3. Además, el número de sustancias consideradas va desde 0 hasta 14, donde, a medida que aumenta reduce la cantidad de observaciones asociadas.
+
+De esta manera, consideramos y establecemos tres grupos de consumo para el estudio: participantes sin consumo reciente de las sustancias seleccionadas (`None`), consumidores de una única sustancia (`One`) y consumidores de dos o más (`Multiple`), que representan el **28,12 %, 14,59 % y 57,29 %** de la muestra, respectivamente. Aunque la clasificación es muy simplificada
+
+El número de sustancias utilizadas nos permite clasificar el consumo de drogas de los distintos individuos. No obstante, al contar con 14 tipos de drogas distintas, es muy importante que esta clasificacion sea lo suficientemente representativa para no perder información al analizar los resultados para las distintas agrupaciones.
+
+El análisis descriptivo muestra una media de **3,34 sustancias consumidas por participante**, con valores comprendidos entre 0 y 14. En general, el número de participantes disminuye conforme aumenta la cantidad de sustancias consumidas.
+
+Para estudiar la relación entre el policonsumo y los rasgos psicológicos, se establecieron tres grupos: participantes sin consumo reciente de las sustancias seleccionadas (`None`), consumidores de una única sustancia (`One`) y consumidores de dos o más (`Multiple`). Estos representan el **28,12 %, 14,59 % y 57,29 %** de la muestra, respectivamente.
+
+Aunque esta agrupación simplifica la diversidad de patrones de consumo, permite comparar los perfiles psicológicos de los participantes según su nivel de policonsumo.
+
+```{r}
+policonsumo <- policonsumo %>%
+  mutate(
+    grupo = case_when(
+      n_sustancias == 0 ~ "None",
+      n_sustancias == 1 ~ "One",
+      n_sustancias >= 2 ~ "Multiple"
+    ),
+    grupo = factor(grupo, levels = c("None", "One", "Multiple"))
+  )
+
+table(policonsumo$grupo) 
+round(prop.table(table(policonsumo$grupo)) * 100, 2)
+```
+
+```{r}
+policonsumo %>%
+  group_by(grupo) %>%
+  summarise(
+    n = n(),
+    mediana_impulsividad = median(impulsive),
+    mediana_ss = median(ss),
+    mediana_cscore = median(cscore)
+  )
+
+policonsumo_grafico <- policonsumo %>%
+  pivot_longer(
+    cols = c(impulsive, ss, cscore),
+    names_to = "rasgo",
+    values_to = "valor"
+  )
+
+rho_imp <- round(cor(policonsumo$n_sustancias, policonsumo$impulsive, method = "spearman"), 3)
+rho_ss <- round(cor(policonsumo$n_sustancias, policonsumo$ss,  method = "spearman"), 3)
+rho_cscore <- round(cor(policonsumo$n_sustancias,policonsumo$cscore,  method = "spearman"), 3)
+etiquetas <- c(
+  impulsive = paste0("impulsive\nSpearman: ", rho_imp),
+  ss = paste0("ss\nSpearman: ", rho_ss),
+  cscore = paste0("cscore\nSpearman: ", rho_cscore)
+)
+
+ggplot(policonsumo_grafico, aes(x = grupo, y = valor)) +
+  geom_boxplot() +
+  geom_hline(
+    data = data.frame(
+      rasgo = c("impulsive", "ss"),
+      referencia = c(0, 0)
+    ),
+    aes(yintercept = referencia),
+    inherit.aes = FALSE,
+    linetype = "dashed",
+    color = "red",
+    linewidth = 0.6
+  ) +
+  facet_wrap(
+    ~ rasgo,
+    labeller = as_labeller(etiquetas),
+    scales = "free_y"
+  ) +
+  labs(
+    title = "Rasgos psicológicos según el número de sustancias consumidas",
+    x = "Grupo de consumo",
+    y = "Puntuación"
+  )
+```
+
+Podemos observar que los participantes que consumen varias sustancias tienen una mediana más elevada que los otros dos grupos. Sin embargo, entre quienes no consumen ninguna y quienes llegan a consumir solamente una apenas se observa diferencia en la mediana.
+
+### ¿Las sustancias de una misma familia presentan más co-consumo que las de familias diferentes?
+
 # Conclusiones
