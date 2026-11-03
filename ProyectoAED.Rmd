@@ -285,34 +285,24 @@ nrow(personas_semeron)
 ```
 
 ```{r}
-datos_families_sin_outliers <- datos_families %>%
-  filter(!id %in% personas_semeron$id)
-
+datos_families_sin_outliers <- datos_families %>% filter(!id %in% personas_semeron$id)
 ```
 
 ```{r}
 variables <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
-datos_personas <- datos_families %>% distinct(id, .keep_all = TRUE)
-
-outliers <- datos_personas %>%
+# Una fila por persona y una observación por puntuación.
+outliers <- datos_families %>% distinct(id, .keep_all = TRUE) %>%
   select(id, all_of(variables)) %>%
-  pivot_longer(-id, names_to = "variable", values_to = "valor") %>%
-  group_by(variable) %>%
+  pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
   mutate(sigma_inf = mean(valor) - 3 * sd(valor), sigma_sup = mean(valor) + 3 * sd(valor),
          hampel_inf = median(valor) - 3 * mad(valor), hampel_sup = median(valor) + 3 * mad(valor),
          boxplot_inf = quantile(valor, .25) - 1.5 * IQR(valor),
-         boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>%
-  ungroup() %>%
-  pivot_longer(cols = ends_with(c("_inf", "_sup")),
-               names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>%
-  mutate(atipico = valor < inf | valor > sup)
-
+         boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>% ungroup() %>%
+  pivot_longer(cols = ends_with(c("_inf", "_sup")),names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>% mutate(atipico = valor < inf | valor > sup)
 
 # Número de outliers y límites de cada método.
-outliers %>%
-  group_by(variable, metodo) %>%
-  summarise(n_outliers = sum(atipico), inferior = first(inf),
-            superior = first(sup), .groups = "drop")
+outliers %>% group_by(variable, metodo) %>%
+  summarise(n_outliers = sum(atipico), inferior = first(inf),superior = first(sup), .groups = "drop")
 ```
 
 ```{r}
