@@ -303,6 +303,8 @@ str(datos_families)
 
 ## Analisis de Valores Atipicos
 
+A los participantes se les preguntó por el consumo de una sustancia ficticia, Semeron, incluida como control de calidad de las respuestas. Algunos declararon haberla consumido, lo que plantea dudas sobre la fiabilidad de sus respuestas, aunque no permite afirmar que el resto de la información sea falsa. Por ello, identificamos estos registros para comparar los resultados con y sin su inclusión y evaluar si afectan a las conclusiones del análisis.
+
 ```{r}
 personas_semeron <- datos_families %>%
   filter(substance == "semer", !is.na(consumption), consumption != "Never") %>%
@@ -316,6 +318,10 @@ nrow(personas_semeron)
 ```{r}
 datos_families_sin_outliers <- datos_families %>% filter(!id %in% personas_semeron$id)
 ```
+
+Ocho participantes declararon haber consumido Semeron. Aunque representan una proporción reducida de la muestra, conviene mantener sus registros identificados para evaluar su posible influencia en los resultados. 
+
+A continuación, examinamos la presencia de valores atípicos en las puntuaciones de los cinco rasgos de personalidad, la impulsividad y la búsqueda de sensaciones, ya que podrían influir en el análisis posterior. Para identificarlos, aplicamos y comparamos tres criterios: la regla de tres sigma, el identificador de Hampel y la regla del boxplot. Los valores señalados se revisarán para determinar si corresponden a errores o a perfiles extremos válidos, sin eliminarlos automáticamente.
 
 ```{r}
 variables <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
@@ -336,7 +342,7 @@ outliers %>% group_by(variable, metodo) %>%
 
 ```{r}
 outliers %>%
-  filter(variable == "escore") %>%
+  filter(variable == "cscore") %>%
   mutate(grupo = case_when(
     id %in% personas_semeron$id ~ "Declara Semeron",
     atipico ~ "Atípico",
@@ -353,8 +359,57 @@ outliers %>%
   labs(x = "Participante", y = "Puntuación", color = "Grupo") +
   theme_minimal()
 ```
+En esta gráfica, la regla del boxplot establece un intervalo más estrecho y, por tanto, **identifica más valores atípicos** que Hampel y tres sigma. Estos dos últimos métodos presentan límites similares y señalan únicamente las puntuaciones más extremas.
+
+```{r}
+puntos <- outliers %>%
+  filter(variable == "cscore") %>%
+  mutate(grupo = case_when(
+    id %in% personas_semeron$id ~ "Declara Semeron",
+    atipico ~ "Atípico",
+    TRUE ~ "Resto"
+  )) %>%
+  arrange(grupo == "Declara Semeron")
+
+valores <- puntos %>% distinct(id, valor)
+d <- density(valores$valor, na.rm = TRUE)
+curva <- tibble(valor = d$x, densidad = d$y)
+
+puntos <- puntos %>%
+  mutate(densidad = approx(d$x, d$y, xout = valor)$y)
+
+ggplot(puntos, aes(x = densidad, y = valor)) +
+  geom_ribbon(data = curva, aes(y = valor, xmin = 0, xmax = densidad),
+              inherit.aes = FALSE, orientation = "y", fill = "grey90") +
+  geom_path(data = curva, color = "grey50") +
+  geom_hline(data = distinct(puntos, metodo, inf, sup),
+             aes(yintercept = inf), linetype = "dashed") +
+  geom_hline(data = distinct(puntos, metodo, inf, sup),
+             aes(yintercept = sup), linetype = "dashed") +
+  geom_point(aes(color = grupo), size = 2,
+           position = position_jitter(width = 0.001, height = 0, seed = 123)) +
+  facet_wrap(~ metodo) +
+  scale_color_manual(values = c("Declara Semeron" = "blue",
+                                "Atípico" = "red", "Resto" = "grey60")) +
+  labs(x = "Densidad estimada", y = "Puntuación de responsabilidad (cscore)",
+       color = "Grupo") +
+  theme_minimal()
+```
+
 
 Los métodos de tres sigma, Hampel y boxplot identificaron observaciones extremas en algunas puntuaciones de personalidad, impulsividad y búsqueda de sensaciones. Tras su revisión, no se encontraron evidencias de errores de registro o transformación: las puntuaciones señaladas son admisibles y representan perfiles poco frecuentes. Por ello, se conservaron estas observaciones, ya que su eliminación podría excluir variabilidad relevante para el estudio.
+
+```{r}
+caso <- outliers %>%
+  filter(variable == "cscore", atipico) %>%
+  distinct(id, variable, valor) %>%
+  slice_head(n = 1)
+
+datos_families %>%
+  filter(id == caso$id) %>%
+  select(id, age, gender, education, cscore) %>%
+  distinct()
+```
 
 ## Analisis Bivariable
 
@@ -448,6 +503,10 @@ consumo_genero <- resumir_consumo(datos_consumo, "gender", "substance")
 consumo_etnia <- resumir_consumo(datos_consumo, "ethnicity", "substance")
 ```
 
+### ¿Se asocia el perfil sociodemográfico en el consumo de ciertas sustancias o familias de ellas?
+
+#### Edad
+
 ```{r edad-familias, fig.width=13, fig.height=12, warning=FALSE}
 edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
 paneles <- c("Cannabinoids", "Depressants", "Dissociatives", "Empathogens",
@@ -483,8 +542,12 @@ titulos <- lineas %>%
   filter(x %in% c(1, 6)) %>%
   select(panel, x, porcentaje) %>%
   pivot_wider(names_from = x, values_from = porcentaje, names_prefix = "edad_") %>%
-  mutate(titulo = paste0(etiquetas[as.character(panel)], "\n",
-         sprintf("65+ frente a 18-24: %+.0f p.p.", edad_6 - edad_1)))
+  mutate(diferencia = edad_6 - edad_1,
+         titulo = paste0(etiquetas[as.character(panel)], "\n",
+                         sprintf("65+ frente a 18-24: %+.0f p.p.", diferencia))) %>% arrange(diferencia)
+
+lineas <- lineas %>%
+  mutate(panel = factor(panel, levels = as.character(titulos$panel)))
 
 rotulos <- setNames(titulos$titulo, as.character(titulos$panel))
 fondo <- lineas %>% rename(serie = panel)
@@ -523,6 +586,7 @@ grafico_edad_familias <- ggplot(lineas, aes(x = x, y = porcentaje, group = panel
 
 grafico_edad_familias
 ```
+#### Genero
 
 ```{r}
 grafico_genero <- consumo_genero %>%
@@ -540,11 +604,20 @@ grafico_genero <- consumo_genero %>%
        x = "Consumo en los últimos 12 meses", y = NULL, color = NULL) +
   theme_minimal(base_size = 12) +
   theme(legend.position = "top", panel.grid.minor = element_blank(),
-        panel.grid.major.y = element_blank(),
+        panel.grid.major.y = element_line(color = "grey90", linetype = "dotted"),
         plot.title = element_text(face = "bold", size = 17))
 
 grafico_genero
 ```
+
+
+A primera vista, el chocolate, la cafeína y el alcohol presentan porcentajes de consumo reciente muy elevados y similares entre hombres y mujeres. **La nicotina constituye una excepción entre las sustancias de consumo socialmente extendido**, ya que muestra un porcentaje claramente superior en los hombres.
+
+En el resto de las sustancias representadas también se observa mayor consumo reciente declarado entre los hombres. La separación es especialmente visible en cannabis y *legal highs*, seguidas de sustancias como éxtasis, anfetaminas y setas. Por tanto, algunas de las mayores diferencias en puntos porcentuales aparecen en sustancias con un consumo relativamente extendido, fuera del grupo de las más consumidas.
+
+En las sustancias menos consumidas, como heroína, sustancias volátiles y crack, los porcentajes de ambos grupos se aproximan. Sin embargo, **una diferencia absoluta pequeña no implica necesariamente una diferencia relativa pequeña**: cuando el consumo es poco frecuente, unos pocos puntos porcentuales pueden representar una proporción considerable. Estos resultados describen diferencias en la muestra y no permiten atribuirlas exclusivamente al género.
+
+#### Etnia
 
 ```{r}
 consumo_grupos <- datos_consumo %>%
