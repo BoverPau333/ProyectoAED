@@ -206,25 +206,27 @@ for (v in big_five) {
 
 Normalizamos entre 0 y 1 los niveles de impulsive y sensation seeking.
 
+Normalizamos entre 0 y 1 el resto de variables psicologicas.
+
 ```{r}
 # Impulsivity and Sensation Seeking
 
 datos <- datos %>%
   mutate(
-    impulsive_norm = (impulsive - min(impulsive)) /
+    impulsive = (impulsive - min(impulsive)) /
                      (max(impulsive) - min(impulsive)),
 
-    ss_norm = (ss - min(ss)) /
+    ss = (ss - min(ss)) /
               (max(ss) - min(ss))
   )
 
 # Comprobar resultados
-summary(datos$impulsive_norm)
-summary(datos$ss_norm)
+summary(datos$impulsive)
+summary(datos$ss)
 
 # Validation
-table(datos$impulsive_norm)
-table(datos$ss_norm)
+table(datos$impulsive)
+table(datos$ss)
 
 ```
 
@@ -852,25 +854,18 @@ summary(policonsumo)
 
 El resumen estadístico del conjunto de datos preparado para el análisis muestra que, aproximadamente, la media de sustancias consumidas por persona, tomando como referencia los datos recogidos, es 3. Además, el número de sustancias consideradas va desde 0 hasta 14, donde, a medida que aumenta reduce la cantidad de observaciones asociadas.
 
-De esta manera, consideramos y establecemos tres grupos de consumo para el estudio: participantes sin consumo reciente de las sustancias seleccionadas (`None`), consumidores de una única sustancia (`One`) y consumidores de dos o más (`Multiple`), que representan el **28,12 %, 14,59 % y 57,29 %** de la muestra, respectivamente. Aunque la clasificación es muy simplificada
-
-El número de sustancias utilizadas nos permite clasificar el consumo de drogas de los distintos individuos. No obstante, al contar con 14 tipos de drogas distintas, es muy importante que esta clasificacion sea lo suficientemente representativa para no perder información al analizar los resultados para las distintas agrupaciones.
-
-El análisis descriptivo muestra una media de **3,34 sustancias consumidas por participante**, con valores comprendidos entre 0 y 14. En general, el número de participantes disminuye conforme aumenta la cantidad de sustancias consumidas.
-
-Para estudiar la relación entre el policonsumo y los rasgos psicológicos, se establecieron tres grupos: participantes sin consumo reciente de las sustancias seleccionadas (`None`), consumidores de una única sustancia (`One`) y consumidores de dos o más (`Multiple`). Estos representan el **28,12 %, 14,59 % y 57,29 %** de la muestra, respectivamente.
-
-Aunque esta agrupación simplifica la diversidad de patrones de consumo, permite comparar los perfiles psicológicos de los participantes según su nivel de policonsumo.
+De esta manera, consideramos y establecemos cuatro grupos de consumo para el estudio: participantes sin consumo reciente de las sustancias seleccionadas (`0`), consumidores de una única sustancia (`1`), consumidores de dos o tres (`2-3`), y consumidores de cuatro o más (`4+`), que representan el **28,12 %, 14,59 % , 17,56 % y 39,73 %** de la muestra, respectivamente.
 
 ```{r}
 policonsumo <- policonsumo %>%
   mutate(
     grupo = case_when(
-      n_sustancias == 0 ~ "None",
-      n_sustancias == 1 ~ "One",
-      n_sustancias >= 2 ~ "Multiple"
+      n_sustancias == 0 ~ "0",
+      n_sustancias == 1 ~ "1",
+      n_sustancias == 2 | n_sustancias == 3 ~ "2-3",
+      n_sustancias >= 4 ~ "4+"
     ),
-    grupo = factor(grupo, levels = c("None", "One", "Multiple"))
+    grupo = factor(grupo, levels = c("0", "1", "2-3", "4+"))
   )
 
 table(policonsumo$grupo) 
@@ -883,39 +878,25 @@ policonsumo %>%
   summarise(
     n = n(),
     mediana_impulsividad = median(impulsive),
-    mediana_ss = median(ss),
-    mediana_cscore = median(cscore)
+    mediana_ss = median(ss)
   )
 
 policonsumo_grafico <- policonsumo %>%
   pivot_longer(
-    cols = c(impulsive, ss, cscore),
+    cols = c(impulsive, ss),
     names_to = "rasgo",
     values_to = "valor"
   )
 
 rho_imp <- round(cor(policonsumo$n_sustancias, policonsumo$impulsive, method = "spearman"), 3)
 rho_ss <- round(cor(policonsumo$n_sustancias, policonsumo$ss,  method = "spearman"), 3)
-rho_cscore <- round(cor(policonsumo$n_sustancias,policonsumo$cscore,  method = "spearman"), 3)
 etiquetas <- c(
   impulsive = paste0("impulsive\nSpearman: ", rho_imp),
-  ss = paste0("ss\nSpearman: ", rho_ss),
-  cscore = paste0("cscore\nSpearman: ", rho_cscore)
+  ss = paste0("ss\nSpearman: ", rho_ss)
 )
 
 ggplot(policonsumo_grafico, aes(x = grupo, y = valor)) +
   geom_boxplot() +
-  geom_hline(
-    data = data.frame(
-      rasgo = c("impulsive", "ss"),
-      referencia = c(0, 0)
-    ),
-    aes(yintercept = referencia),
-    inherit.aes = FALSE,
-    linetype = "dashed",
-    color = "red",
-    linewidth = 0.6
-  ) +
   facet_wrap(
     ~ rasgo,
     labeller = as_labeller(etiquetas),
@@ -926,10 +907,50 @@ ggplot(policonsumo_grafico, aes(x = grupo, y = valor)) +
     x = "Grupo de consumo",
     y = "Puntuación"
   )
+
+summary(datos_families)
 ```
+
+Podemos observar una **asociación positiva entre ambos rasgos psicológicos y el número de sustancias consumidas**, aunque con diferencias en su comportamiento.
+
+Por un lado, las distribuciones de la **impulsividad** están solapadas, especialmente, entre los participantes que consumen una o mas sustancias.
+
+Por
+
+La impulsividad presenta distribuciones considerablemente solapadas entre los participantes que consumen ninguna, una o entre dos y tres sustancias, observándose un desplazamiento más claro hacia puntuaciones superiores en el grupo de cuatro o más. Por el contrario, la búsqueda de sensaciones muestra un incremento progresivo tanto de las medianas como de los cuartiles, con una separación especialmente marcada entre los grupos extremos. Esta diferencia también se refleja en las correlaciones de Spearman, siendo mayor la asociación con la búsqueda de sensaciones (ρ = 0,516) que con la impulsividad (ρ = 0,361).
+
+Para profundizar en estas diferencias, dividimos los participantes que han consumido al menos una sustancia en dos niveles (`High` y `Low`), utilizando la mediana de cada rasgo como referencia.
 
 Podemos observar que los participantes que consumen varias sustancias tienen una mediana más elevada que los otros dos grupos. Sin embargo, entre quienes no consumen ninguna y quienes llegan a consumir solamente una apenas se observa diferencia en la mediana.
 
+```{r}
+comparacion <- policonsumo %>%
+  filter(n_sustancias >= 1) %>%
+  pivot_longer(
+    cols = c(impulsive, ss),
+    names_to = "rasgo",
+    values_to = "valor"
+  ) %>%
+  group_by(rasgo) %>%
+  mutate(
+    nivel = if_else(valor > median(valor), "High", "Low"),
+    multiple = n_sustancias >= 2
+  ) %>%
+  group_by(rasgo, nivel) %>%
+  summarise(
+    n = n(),
+    porcentaje_multiple = round(mean(multiple) * 100, 2)
+  )
+
+comparacion
+```
+
+Los porcentajes obtenidos muestran que el uso de varias sustancias es **más frecuente** entre quienes cuentan con **puntuaciones elevadas en ambas características**, aunque esta diferencia es mayor para la búsqueda de sensaciones.
+
+En conjunto, ambos análisis sugieren que **la búsqueda de sensaciones permite distinguir mejor los perfiles de consumo estudiados**, mientras que la impulsividad presenta una asociación positiva menos pronunciada. No obstante, el solapamiento entre las distribuciones indica que ninguno de los dos rasgos determina individualmente el comportamiento de consumo, ni puede establecerse una relación causal a partir de estos resultados.
+
 ### ¿Las sustancias de una misma familia presentan más co-consumo que las de familias diferentes?
+
+perfecto. con esto, te adjunto el Rmd correspondiente a la practica. analizado detenidamente pero no me indiques ningún comentario a cerca de el a no ser que veas algo incorrecto. con esto quiero que trates de extraer todos los analsisi que ya hemos realizado al igual que las preguntas respondidas (no te quedes con los bloques de texto, solamente con el codigo y las gráficas).
 
 # Conclusiones
