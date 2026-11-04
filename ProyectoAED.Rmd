@@ -915,13 +915,9 @@ Podemos observar una **asociación positiva entre ambos rasgos psicológicos y 
 
 Por un lado, las distribuciones de la **impulsividad** están solapadas, especialmente, entre los participantes que consumen una o mas sustancias.
 
-Por
-
-La impulsividad presenta distribuciones considerablemente solapadas entre los participantes que consumen ninguna, una o entre dos y tres sustancias, observándose un desplazamiento más claro hacia puntuaciones superiores en el grupo de cuatro o más. Por el contrario, la búsqueda de sensaciones muestra un incremento progresivo tanto de las medianas como de los cuartiles, con una separación especialmente marcada entre los grupos extremos. Esta diferencia también se refleja en las correlaciones de Spearman, siendo mayor la asociación con la búsqueda de sensaciones (ρ = 0,516) que con la impulsividad (ρ = 0,361).
+Por el contrario, la **búsqueda de sensaciones** muestra una tendencia positiva y progresiva tanto en las medianas como los cuartiles, diferencia que también se observa en las correlaciones de Spearman, siendo mayor que la asociación de la impulsividad.
 
 Para profundizar en estas diferencias, dividimos los participantes que han consumido al menos una sustancia en dos niveles (`High` y `Low`), utilizando la mediana de cada rasgo como referencia.
-
-Podemos observar que los participantes que consumen varias sustancias tienen una mediana más elevada que los otros dos grupos. Sin embargo, entre quienes no consumen ninguna y quienes llegan a consumir solamente una apenas se observa diferencia en la mediana.
 
 ```{r}
 comparacion <- policonsumo %>%
@@ -947,10 +943,6 @@ comparacion
 
 Los porcentajes obtenidos muestran que el uso de varias sustancias es **más frecuente** entre quienes cuentan con **puntuaciones elevadas en ambas características**, aunque esta diferencia es mayor para la búsqueda de sensaciones.
 
-En conjunto, ambos análisis sugieren que **la búsqueda de sensaciones permite distinguir mejor los perfiles de consumo estudiados**, mientras que la impulsividad presenta una asociación positiva menos pronunciada. No obstante, el solapamiento entre las distribuciones indica que ninguno de los dos rasgos determina individualmente el comportamiento de consumo, ni puede establecerse una relación causal a partir de estos resultados.
-
 ### ¿Las sustancias de una misma familia presentan más co-consumo que las de familias diferentes?
-
-perfecto. con esto, te adjunto el Rmd correspondiente a la practica. analizado detenidamente pero no me indiques ningún comentario a cerca de el a no ser que veas algo incorrecto. con esto quiero que trates de extraer todos los analsisi que ya hemos realizado al igual que las preguntas respondidas (no te quedes con los bloques de texto, solamente con el codigo y las gráficas).
 
 # Conclusiones
