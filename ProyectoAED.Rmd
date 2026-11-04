@@ -1,49 +1,105 @@
 ---
-title: "Proyecto AED"
-author: "Pau Bover Femenias / Francesc Oliver Catany / Marino Fernandez Perez"
-date: "`r Sys.Date()`"
+title: "Consumo de sustancias y factores sociodemográficos y de personalidad: un análisis exploratorio"
+author:
+  - name: "Pau Bover Femenias"
+    affil: "1"
+  - name: "Francesc Oliver Catany"
+    affil: "1"
+  - name: "Marino Fernandez Perez"
+    affil: "1"
+affiliation:
+  - num: 1
+    address: |
+      Universitat de València, Grado en Ciencia de Datos,
+      València, España.
+    email: "PENDIENTE_DE_COMPLETAR"
+authorcitation: |
+  Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
+journal: notspecified
+type: article
+status: submit
+simplesummary: |
+  Este artículo presenta una exploración reproducible de una encuesta sobre
+  consumo de sustancias y características personales. Se comparan porcentajes
+  de consumo reciente entre grupos sociodemográficos y se examinan sus
+  asociaciones con rasgos de personalidad y policonsumo.
+abstract: |
+  El objetivo del estudio es explorar la asociación entre características
+  sociodemográficas, rasgos de personalidad y consumo de sustancias en el
+  conjunto de datos público Drug Consumption (Quantified) de UCI. Se analizan
+  1.885 observaciones mediante limpieza y recodificación de variables,
+  reconstrucción de puntuaciones del Big Five, clasificación de sustancias,
+  estadística descriptiva y correlaciones de Spearman. El consumo reciente
+  se define a partir de la última ocasión de consumo declarada, y sus
+  proporciones se comparan por edad, género, etnia y educación. También se
+  estudian los valores atípicos, las respuestas a una sustancia ficticia
+  y el policonsumo. El análisis documenta diferencias descriptivas entre
+  grupos y asociaciones de algunos rasgos psicológicos con el consumo,
+  particularmente la búsqueda de sensaciones. Dado el carácter transversal
+  de la muestra y las diferencias entre subgrupos, los resultados no
+  permiten establecer relaciones causales ni generalizar directamente las
+  prevalencias a la población general.
+keywords: |
+  análisis exploratorio de datos; consumo de sustancias; Big Five;
+  impulsividad; búsqueda de sensaciones; prevalencia; policonsumo
+acknowledgement: |
+  Pendiente de completar o retirar por los autores antes de la entrega.
+authorcontributions: |
+  Pendiente de completar: contribución específica de cada autor.
+funding: |
+  Pendiente de confirmar por los autores si se recibió financiación.
+institutionalreview: |
+  Pendiente de verificar la declaración ética correspondiente al uso
+  secundario del conjunto de datos público.
+informedconsent: |
+  Pendiente de verificar en la documentación del estudio original.
+dataavailability: |
+  Los datos analizados proceden del repositorio público UCI Machine Learning
+  Repository, Drug Consumption (Quantified):
+  https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified.
+conflictsofinterest: |
+  Pendiente de declaración por los autores.
+abbreviations:
+  - short: UCI
+    long: University of California, Irvine
+  - short: EDA
+    long: Exploratory Data Analysis
+  - short: BIS-11
+    long: Barratt Impulsiveness Scale
+endnotes: false
 output:
-  pdf_document:
-    toc: true
-  html_notebook:
-    echo: true
-    number_sections: true
-    toc: true
-  html_document:
-    echo: true
-    number_sections: true
-    theme: cerulean
-    toc: true
-params:
-  lang: ES
-lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
-subtitle: "Tratamiento de Datos. Grado en Ciencia de Datos- UV"
-language:
-  label:
-    fig: 'Figura '
-    tab: 'Tabla '
-    eq: 'Ecuación '
-    thm: 'Teorema '
-    lem: 'Lema '
-    def: 'Definición '
-    cor: 'Corolario '
-    prp: 'Proposición '
-    exm: 'Ejemplo '
-    exr: 'Ejercicio '
-    proof: 'Demostración. '
-    remark: 'Nota: '
-    solution: 'Solución. '
+  rticles::mdpi_article:
+    extra_dependencies: longtable
+editor_options:
+  markdown:
+    wrap: 72
+header-includes:
+  - \providecommand{\pandocbounded}[1]{#1}
 ---
 
-# Instalación de paquetes necesarios
+# Introducción
+
+# Materiales y métodos
+
+```{r mdpi_setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  comment = NA
+)
+```
+
+## Entorno de análisis y paquetes
 
 En el siguiente bloque instalamos las librerias necesarias.
 
-```{r paquetes, results='hide', message=FALSE, warning=FALSE}
+```{r paquetes, results="hide", warning=FALSE, message=FALSE}
 
 # Especificamos las librerías necesarias en esta lista
 
-packages = c("tidyverse","knitr", "rvest", "dplyr","corrplot","tidyr")
+packages = c("tidyverse","knitr", "rvest", "dplyr","corrplot","tidyr","jsonlite")
 
 
 #use this function to check if each package is on the local machine
@@ -51,7 +107,7 @@ packages = c("tidyverse","knitr", "rvest", "dplyr","corrplot","tidyr")
 #if any are not, the missing package(s) will be installed and loaded
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
-    install.packages(x, dependencies = TRUE,repos='http://cran.rediris.es')
+    install.packages(x, dependencies = TRUE,repos='https://cloud.r-project.org')
   }
   library(x, character.only = TRUE)
 })
@@ -60,11 +116,11 @@ package.check <- lapply(packages, FUN = function(x) {
 search()
 ```
 
-# Obtención de datos
+## Obtención de datos
 
-## Descarga de datos
+### Descarga del conjunto de datos
 
-```{r}
+```{r descarga_datos, results="hide", warning=FALSE, message=FALSE}
 # Creamos la carpeta donde guardaremos los datos
 dir.create("data", showWarnings = FALSE)
 
@@ -88,9 +144,9 @@ datos <- read.csv(
 head(datos)
 ```
 
-## Metadatos
+### Metadatos y denominación de variables
 
-```{r}
+```{r obtener_metadatos, results="hide", warning=FALSE, message=FALSE}
 metadatos <- jsonlite::fromJSON(
   "https://archive.ics.uci.edu/api/dataset?id=373"
 )
@@ -98,7 +154,7 @@ metadatos <- jsonlite::fromJSON(
 head(metadatos$data$variables)
 ```
 
-```{r}
+```{r nombres_variables, results="hide", warning=FALSE, message=FALSE}
 nombres <- metadatos$data$variables$name
 stopifnot(length(nombres) == ncol(datos))
 names(datos) <- nombres
@@ -106,20 +162,28 @@ names(datos) <- nombres
 names(datos)
 ```
 
-# Preprocesamiento de datos
+## Preprocesamiento y tratamiento de variables
 
-Podemos observar que, entre las distintas variables que caracterizan cada uno de los registros recogidos en el dataset, la variable `impuslive` refiere a la impulsividad. No obstante, el nombre cuenta con un fallo ortografico que la hace no ser lo suficientemente representativa, dando lugar a problemas de interpretación.
+Podemos observar que, entre las distintas variables que caracterizan
+cada uno de los registros recogidos en el dataset, la variable
+`impuslive` refiere a la impulsividad. No obstante, el nombre cuenta con
+un fallo ortografico que la hace no ser lo suficientemente
+representativa, dando lugar a problemas de interpretación.
 
-Por ello, corregimos a `impulsive` mediante la función `rename` de la biblioteca `dplyr`.
+Por ello, corregimos a `impulsive` mediante la función `rename` de la
+biblioteca `dplyr`.
 
-```{r}
+```{r corregir_impulsive, results="hide", warning=FALSE, message=FALSE}
 datos <- rename(datos, impulsive = impuslive)
 head(datos["impulsive"],3)
 ```
 
-Pasamos a factores para poder interpretar los valores. Usamos los datos proporcionados en la web de UCI.
+### Variables sociodemográficas
 
-```{r}
+Las variables sociodemográficas se recodifican como factores nominales u
+ordinales a partir de las equivalencias publicadas por UCI.
+
+```{r categorias_demografia, results="hide", warning=FALSE, message=FALSE}
 datos <- datos %>%
   mutate(
     age = factor(age,
@@ -152,7 +216,9 @@ datos <- datos %>%
 lapply(datos[c("age", "gender", "education", "country", "ethnicity")], table)
 ```
 
-```{r}
+### Categorías de consumo
+
+```{r categorias_consumo, results="hide", warning=FALSE, message=FALSE}
 variables_consumo <- c(
   "alcohol", "amphet", "amyl", "benzos", "caff",
   "cannabis", "choc", "coke", "crack", "ecstasy",
@@ -171,7 +237,16 @@ datos <- datos %>%
 table(datos$alcohol)
 ```
 
-```{r}
+### Variables psicométricas
+
+Se recuperan las puntuaciones observadas del Big Five a partir del
+diccionario publicado por UCI. Las escalas de impulsividad (BIS-11) y
+búsqueda de sensaciones (ImpSS) se mantienen como valores numéricos
+transformados antes de su reescalado Min-Max, dado que la documentación
+suministrada no permite reconstruir las puntuaciones originales de esos
+instrumentos.
+
+```{r inspeccion_impulsividad, results="hide", warning=FALSE, message=FALSE}
 datos %>%
   select(impulsive, ss) %>%
   summary()
@@ -180,9 +255,13 @@ sort(unique(datos$impulsive))
 sort(unique(datos$ss))
 ```
 
-Lo hacemos así porque como hay algunas puntuaciones que no aparecen y la cuantización esta hecha sin tener en cuenta esos valores, si hacemos una transformacin lineal no nos funciona bien.
+Para el Big Five se reconstruyen las puntuaciones originales mediante
+sus posiciones ordenadas y las puntuaciones observadas documentadas por
+UCI. Una transformación lineal no recuperaría exactamente los valores
+originales porque la codificación publicada no conserva distancias
+uniformes.
 
-```{r}
+```{r recuperacion_big_five, results="hide", warning=FALSE, message=FALSE}
 big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
 
 # Puntuaciones originales publicadas por UCI teniendo en cuenta los faltantes
@@ -204,11 +283,12 @@ for (v in big_five) {
 
 ```
 
-Normalizamos entre 0 y 1 los niveles de impulsive y sensation seeking.
+Se reescalan por separado las variables `impulsive` y `ss` a [0, 1]
+mediante Min-Max, conservando su orden. Este reescalado no recupera las
+puntuaciones originales de sus cuestionarios. Las cinco dimensiones Big
+Five permanecen en las puntuaciones reconstruidas de la escala original.
 
-Normalizamos entre 0 y 1 el resto de variables psicologicas.
-
-```{r}
+```{r normalizacion_impulsividad_ss, results="hide", warning=FALSE, message=FALSE}
 # Impulsivity and Sensation Seeking
 
 datos <- datos %>%
@@ -230,9 +310,11 @@ table(datos$ss)
 
 ```
 
-# Análisis exploratorio
+## Clasificación de sustancias y construcción de variables de consumo
 
-```{r}
+### Clasificación farmacológica
+
+```{r descarga_clasificacion, results="hide", warning=FALSE, message=FALSE}
 url <- "https://www.gov.scot/publications/understanding-patterns-use-motives-harms-new-psychoactive-substances-scotland/pages/3/"
 
 tables <- html_table(
@@ -244,7 +326,7 @@ classification <- tables[[1]]
 head(classification$Name)
 ```
 
-```{r}
+```{r familias_sustancias, results="hide", warning=FALSE, message=FALSE}
 families <- classification$Name
 families <- c(families, "Other", "Fake" )
 
@@ -261,7 +343,9 @@ uci_classification <- data.frame(
 table(uci_classification$family)
 ```
 
-```{r}
+### Reestructuración de datos y consumo reciente
+
+```{r construccion_datos_consumo, results="hide", warning=FALSE, message=FALSE}
 datos_families <- datos %>%
   pivot_longer(
     cols = all_of(uci_classification$substance),
@@ -303,11 +387,23 @@ consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "famil
 str(datos_families)
 ```
 
-## Analisis de Valores Atipicos
+# Resultados
 
-A los participantes se les preguntó por el consumo de una sustancia ficticia, Semeron, incluida como control de calidad de las respuestas. Algunos declararon haberla consumido, lo que plantea dudas sobre la fiabilidad de sus respuestas, aunque no permite afirmar que el resto de la información sea falsa. Por ello, identificamos estos registros para comparar los resultados con y sin su inclusión y evaluar si afectan a las conclusiones del análisis.
+Las figuras y tablas de esta sección proceden de los cálculos
+reproducibles del documento. Salvo que se indique lo contrario, el
+consumo reciente comprende las categorías *Last year*, *Last month*,
+*Last week* y *Last day*.
 
-```{r}
+## Valores atípicos y controles de calidad
+
+En la encuesta se incluyó una sustancia ficticia, Semeron, utilizada
+como control de calidad de las respuestas. Algunos declararon haberla
+consumido, lo que plantea dudas sobre la fiabilidad de sus respuestas,
+aunque no permite afirmar que el resto de la información sea falsa. Por
+ello, identificamos estos registros para comparar los resultados con y
+sin su inclusión y evaluar si afectan a las conclusiones del análisis.
+
+```{r control_semeron, warning=FALSE, message=FALSE}
 personas_semeron <- datos_families %>%
   filter(substance == "semer", !is.na(consumption), consumption != "Never") %>%
   select(id, consumption)
@@ -317,15 +413,25 @@ nrow(personas_semeron)
 
 ```
 
-```{r}
+```{r exclusion_semeron, results="hide", warning=FALSE, message=FALSE}
 datos_families_sin_outliers <- datos_families %>% filter(!id %in% personas_semeron$id)
 ```
 
-Ocho participantes declararon haber consumido Semeron. Aunque representan una proporción reducida de la muestra, conviene mantener sus registros identificados para evaluar su posible influencia en los resultados.
+Ocho participantes declararon haber consumido Semeron. Aunque
+representan una proporción reducida de la muestra, conviene mantener sus
+registros identificados para evaluar su posible influencia en los
+resultados.
 
-A continuación, examinamos la presencia de valores atípicos en las puntuaciones de los cinco rasgos de personalidad, la impulsividad y la búsqueda de sensaciones, ya que podrían influir en el análisis posterior. Para identificarlos, aplicamos y comparamos tres criterios: la regla de tres sigma, el identificador de Hampel y la regla del boxplot. Los valores señalados se revisarán para determinar si corresponden a errores o a perfiles extremos válidos, sin eliminarlos automáticamente.
+A continuación, examinamos la presencia de valores atípicos en las
+puntuaciones de los cinco rasgos de personalidad, la impulsividad y la
+búsqueda de sensaciones, ya que podrían influir en el análisis
+posterior. Para identificarlos, aplicamos y comparamos tres criterios:
+la regla de tres sigma, el identificador de Hampel y la regla del
+boxplot. Los valores señalados se revisarán para determinar si
+corresponden a errores o a perfiles extremos válidos, sin eliminarlos
+automáticamente.
 
-```{r}
+```{r deteccion_outliers, warning=FALSE, message=FALSE}
 variables <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
 # Una fila por persona y una observación por puntuación.
 outliers <- datos_families %>% distinct(id, .keep_all = TRUE) %>%
@@ -342,7 +448,7 @@ outliers %>% group_by(variable, metodo) %>%
   summarise(n_outliers = sum(atipico), inferior = first(inf),superior = first(sup), .groups = "drop")
 ```
 
-```{r}
+```{r fig_atipicos_cscore, fig.width=8, fig.height=5.5, fig.cap="Valores atípicos en responsabilidad (cscore) según tres métodos.\\label{fig:atipicos-cscore}", warning=FALSE, message=FALSE}
 outliers %>%
   filter(variable == "cscore") %>%
   mutate(grupo = case_when(
@@ -362,9 +468,12 @@ outliers %>%
   theme_minimal()
 ```
 
-En esta gráfica, la regla del boxplot establece un intervalo más estrecho y, por tanto, **identifica más valores atípicos** que Hampel y tres sigma. Estos dos últimos métodos presentan límites similares y señalan únicamente las puntuaciones más extremas.
+En esta gráfica, la regla del boxplot establece un intervalo más
+estrecho y, por tanto, **identifica más valores atípicos** que Hampel y
+tres sigma. Estos dos últimos métodos presentan límites similares y
+señalan únicamente las puntuaciones más extremas.
 
-```{r}
+```{r fig_densidad_cscore, fig.width=8, fig.height=5.5, fig.cap="Distribución de cscore y límites de detección de valores atípicos.\\label{fig:densidad-cscore}", warning=FALSE, message=FALSE}
 puntos <- outliers %>%
   filter(variable == "cscore") %>%
   mutate(grupo = case_when(
@@ -399,9 +508,15 @@ ggplot(puntos, aes(x = densidad, y = valor)) +
   theme_minimal()
 ```
 
-Los métodos de tres sigma, Hampel y boxplot identificaron observaciones extremas en algunas puntuaciones de personalidad, impulsividad y búsqueda de sensaciones. Tras su revisión, no se encontraron evidencias de errores de registro o transformación: las puntuaciones señaladas son admisibles y representan perfiles poco frecuentes. Por ello, se conservaron estas observaciones, ya que su eliminación podría excluir variabilidad relevante para el estudio.
+Los métodos de tres sigma, Hampel y boxplot identificaron observaciones
+extremas en algunas puntuaciones de personalidad, impulsividad y
+búsqueda de sensaciones. Tras su revisión, no se encontraron evidencias
+de errores de registro o transformación: las puntuaciones señaladas son
+admisibles y representan perfiles poco frecuentes. Por ello, se
+conservaron estas observaciones, ya que su eliminación podría excluir
+variabilidad relevante para el estudio.
 
-```{r}
+```{r ejemplo_atipico, warning=FALSE, message=FALSE}
 caso <- outliers %>%
   filter(variable == "cscore", atipico) %>%
   distinct(id, variable, valor) %>%
@@ -413,9 +528,9 @@ datos_families %>%
   distinct()
 ```
 
-## Analisis Bivariable
+## Correlaciones entre personalidad y consumo
 
-```{r}
+```{r correlaciones_sustancias, warning=FALSE, message=FALSE}
 consumos <- datos_families %>%
   select(id, substance, consumption) %>%
   distinct() %>%
@@ -433,7 +548,7 @@ datos_cor <- personalidad %>%
 correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
 ```
 
-```{r, fig.width=15, fig.height=10}
+```{r fig_corr_sustancias, fig.width=10.5, fig.height=7.5, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y sustancias.\\label{fig:correlaciones-sustancias}", warning=FALSE, message=FALSE}
 rasgos <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
 sustancias <- setdiff(colnames(correlaciones), rasgos)
 
@@ -447,7 +562,7 @@ corrplot::corrplot(matriz_visual, is.corr = TRUE, col = colores(100),
 
 ```
 
-```{r}
+```{r fig_corr_familias, fig.width=8, fig.height=6, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y consumo por familias.\\label{fig:correlaciones-familias}", warning=FALSE, message=FALSE}
 rasgos <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
 
 # Una columna por familia: 0 = sin consumo reciente, 1 = con consumo reciente.
@@ -476,9 +591,9 @@ corrplot::corrplot(matriz_visual, is.corr = TRUE, col = colores(100),
                   number.cex = 0.8, tl.col = "black", tl.srt = 45)
 ```
 
-# Análisis exploratorio
+## Descripción de la muestra y preparación de comparaciones
 
-```{r}
+```{r consumo_reciente, results="hide", warning=FALSE, message=FALSE}
 datos_consumo <- datos_families %>%
   filter(substance != "semer") %>%
   distinct(id, substance, .keep_all = TRUE) %>%
@@ -487,7 +602,7 @@ datos_consumo <- datos_families %>%
 
 ```
 
-```{r}
+```{r perfil_muestra, warning=FALSE, message=FALSE}
 perfil_personas <- datos_consumo %>%
   distinct(id, age, gender, ethnicity)
 
@@ -498,17 +613,17 @@ perfil_personas %>% count(ethnicity) %>%
   arrange(desc(n))
 ```
 
-```{r warning=FALSE}
+```{r consumo_genero_etnia, results="hide", warning=FALSE, message=FALSE}
 # Género y etnia por sustancia se conservan para los gráficos posteriores.
 consumo_genero <- resumir_consumo(datos_consumo, "gender", "substance")
 consumo_etnia <- resumir_consumo(datos_consumo, "ethnicity", "substance")
 ```
 
-### ¿Se asocia el perfil sociodemográfico en el consumo de ciertas sustancias o familias de ellas?
+## Consumo reciente según características sociodemográficas
 
-#### Edad
+### Edad
 
-```{r edad-familias, fig.width=13, fig.height=12, warning=FALSE}
+```{r fig_consumo_edad, fig.width=12, fig.height=10, fig.cap="Proporción de consumo reciente por grupo de edad y familia de sustancias.\\label{fig:consumo-edad}", warning=FALSE, message=FALSE}
 edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
 paneles <- c("Cannabinoids", "Depressants", "Dissociatives", "Empathogens",
              "Opioids", "Psychedelics", "Stimulants", "nicotine", "alcohol")
@@ -588,17 +703,47 @@ grafico_edad_familias <- ggplot(lineas, aes(x = x, y = porcentaje, group = panel
 grafico_edad_familias
 ```
 
-La gráfica muestra que el consumo reciente declarado es generalmente menor en los grupos de mayor edad, aunque la magnitud de las diferencias depende de la sustancia. Los cannabinoides presentan la mayor diferencia entre jóvenes y mayores, seguidos de psicodélicos, estimulantes y empatógenos. En varias familias, las mayores caídas aparecen entre los grupos de 18–24 y 25–34 años. Este patrón es compatible con estudios que relacionan las transiciones hacia la vida adulta con cambios en el consumo, aunque nuestros datos no permiten establecer sus causas. [pmc.ncbi.nlm.nih.gov](https://pmc.ncbi.nlm.nih.gov/articles/PMC3828971/)
+La gráfica muestra que el consumo reciente declarado es generalmente
+menor en los grupos de mayor edad, aunque la magnitud de las diferencias
+depende de la sustancia. Los cannabinoides presentan la mayor diferencia
+entre jóvenes y mayores, seguidos de psicodélicos, estimulantes y
+empatógenos. En varias familias, las mayores caídas aparecen entre los
+grupos de 18–24 y 25–34 años. Este patrón es compatible con estudios que
+relacionan las transiciones hacia la vida adulta con cambios en el
+consumo, aunque nuestros datos no permiten establecer sus causas.
+[Artículo de
+referencia](https://pmc.ncbi.nlm.nih.gov/articles/PMC3828971/)
 
-El alcohol y la nicotina mantienen una presencia considerable en todas las edades. El alcohol pasa del 96 % entre los más jóvenes al 78 % en mayores de 65 años, mientras que la nicotina desciende del 76 % al 28 %. En cambio, psicodélicos, estimulantes, empatógenos y disociativos presentan porcentajes observados nulos en el último grupo. Estas cifras indican consumo durante los últimos doce meses, pero no permiten conocer su frecuencia, cantidad ni la existencia de dependencia.
+El alcohol y la nicotina mantienen una presencia considerable en todas
+las edades. El alcohol pasa del 96 % entre los más jóvenes al 78 % en
+mayores de 65 años, mientras que la nicotina desciende del 76 % al 28 %.
+En cambio, psicodélicos, estimulantes, empatógenos y disociativos
+presentan porcentajes observados nulos en el último grupo. Estas cifras
+indican consumo durante los últimos doce meses, pero no permiten conocer
+su frecuencia, cantidad ni la existencia de dependencia.
 
-La principal excepción al descenso general aparece en los depresores, cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65. Una posible explicación sería la presencia de benzodiacepinas, cuyo uso por prescripción aumenta con la edad en estudios poblacionales; sin embargo, habría que desglosar esta familia y conocer los motivos de consumo para comprobarlo en nuestra muestra. También se observa un pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a variabilidad muestral y no necesariamente a una tendencia real. [pubmed.ncbi.nlm.nih.gov](https://pubmed.ncbi.nlm.nih.gov/25517224/)
+La principal excepción al descenso general aparece en los depresores,
+cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65.
+Una posible explicación sería la presencia de benzodiacepinas, cuyo uso
+por prescripción aumenta con la edad en estudios poblacionales; sin
+embargo, habría que desglosar esta familia y conocer los motivos de
+consumo para comprobarlo en nuestra muestra. También se observa un
+pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a
+variabilidad muestral y no necesariamente a una tendencia real.
+[Artículo de referencia](https://pubmed.ncbi.nlm.nih.gov/25517224/)
 
-Finalmente, las diferencias deben interpretarse con cautela porque se comparan personas distintas, no la evolución de los mismos participantes. La escasa representación de mayores de 65 años hace que unas pocas respuestas modifiquen considerablemente sus porcentajes, y un 0 % no demuestra ausencia de consumo en la población. Por tanto, los resultados muestran una asociación entre edad y consumo en esta muestra, pero no permiten afirmar que envejecer provoque su abandono ni generalizar directamente las cifras a toda la población.
+Finalmente, las diferencias deben interpretarse con cautela porque se
+comparan personas distintas, no la evolución de los mismos
+participantes. La escasa representación de mayores de 65 años hace que
+unas pocas respuestas modifiquen considerablemente sus porcentajes, y un
+0 % no demuestra ausencia de consumo en la población. Por tanto, los
+resultados muestran una asociación entre edad y consumo en esta muestra,
+pero no permiten afirmar que envejecer provoque su abandono ni
+generalizar directamente las cifras a toda la población.
 
-#### Genero
+### Género
 
-```{r}
+```{r fig_consumo_genero, fig.width=8.5, fig.height=7, fig.cap="Diferencias en consumo reciente por género y sustancia.\\label{fig:consumo-genero}", warning=FALSE, message=FALSE}
 grafico_genero <- consumo_genero %>%
   filter(!is.na(porcentaje)) %>%
   ggplot(aes(x = porcentaje, y = reorder(substance, porcentaje, FUN = mean))) +
@@ -620,15 +765,30 @@ grafico_genero <- consumo_genero %>%
 grafico_genero
 ```
 
-A primera vista, el chocolate, la cafeína y el alcohol presentan porcentajes de consumo reciente muy elevados y casi solapados entre hombres y mujeres. **La nicotina constituye una excepción entre las sustancias de consumo socialmente extendido**, ya que muestra un porcentaje claramente superior en los hombres.
+A primera vista, el chocolate, la cafeína y el alcohol presentan
+porcentajes de consumo reciente muy elevados y casi solapados entre
+hombres y mujeres. **La nicotina constituye una excepción entre las
+sustancias de consumo socialmente extendido**, ya que muestra un
+porcentaje claramente superior en los hombres.
 
-En el resto de las sustancias representadas también se observa mayor consumo reciente declarado entre los hombres. La separación es especialmente visible en cannabis y *legal highs*, seguidas de sustancias como éxtasis, anfetaminas y setas. Por tanto, algunas de las mayores diferencias en puntos porcentuales aparecen en sustancias con un consumo relativamente extendido, fuera del grupo de las más consumidas.
+En el resto de las sustancias representadas también se observa mayor
+consumo reciente declarado entre los hombres. La separación es
+especialmente visible en cannabis y *legal highs*, seguidas de
+sustancias como éxtasis, anfetaminas y setas. Por tanto, algunas de las
+mayores diferencias en puntos porcentuales aparecen en sustancias con un
+consumo relativamente extendido, fuera del grupo de las más consumidas.
 
-En las sustancias menos consumidas, como heroína, sustancias volátiles y crack, los porcentajes de ambos grupos se aproximan. Sin embargo, **una diferencia absoluta pequeña no implica necesariamente una diferencia relativa pequeña**: cuando el consumo es poco frecuente, unos pocos puntos porcentuales pueden representar una proporción considerable. Estos resultados describen diferencias en la muestra y no permiten atribuirlas exclusivamente al género.
+En las sustancias menos consumidas, como heroína, sustancias volátiles y
+crack, los porcentajes de ambos grupos se aproximan. Sin embargo, **una
+diferencia absoluta pequeña no implica necesariamente una diferencia
+relativa pequeña**: cuando el consumo es poco frecuente, unos pocos
+puntos porcentuales pueden representar una proporción considerable.
+Estos resultados describen diferencias en la muestra y no permiten
+atribuirlas exclusivamente al género.
 
-#### Etnia
+### Etnia
 
-```{r etnia-sustancias, fig.width=13, fig.height=6}
+```{r fig_consumo_etnia, fig.width=11, fig.height=5.5, fig.cap="Prevalencia de consumo por etnia: porcentajes e intervalos de Wilson al 95 por ciento.\\label{fig:consumo-etnia}", warning=FALSE, message=FALSE}
 
 # Mantenemos el mismo orden de etnias en los tres paneles.
 orden_etnias <- perfil_personas %>%
@@ -676,7 +836,7 @@ grafico_etnia_sustancias
 
 ```
 
-```{r}
+```{r fig_etnia_grupos, fig.width=9, fig.height=5.5, fig.cap="Consumo reciente por etnia y grupo de sustancias.\\label{fig:grupos-etnia}", warning=FALSE, message=FALSE}
 
 consumo_grupos <- datos_consumo %>%
   filter(!substance %in% c("choc", "semer")) %>%
@@ -708,15 +868,17 @@ ggplot(resumen_etnia, aes(x = ethnicity, y = porcentaje, fill = grupo)) +
         axis.text.x = element_text(angle = 35, hjust = 1))
 ```
 
-### ¿Cómo varía el consumo de estimulantes, depresores y psicodélicos según el nivel educativo?
+## Consumo reciente según nivel educativo
 
-```{r}
+```{r tabla_educacion, warning=FALSE, message=FALSE}
 print(consumo_educacion, n = 5)
 ```
 
-Hay que tener en cuenta que some college es gente que ha abandonado la carrera y gente que la sigue cursando.
+La categoría *Some college* corresponde a estudios universitarios sin
+titulación; el dataset no permite distinguir entre estudiantes actuales
+y personas que interrumpieron los estudios.
 
-```{r}
+```{r fig_consumo_educacion, fig.width=9, fig.height=5.8, fig.cap="Consumo reciente por familia según nivel educativo.\\label{fig:consumo-educacion}", warning=FALSE, message=FALSE}
 grafico_educacion <- ggplot(
   consumo_educacion,
   aes(x = education, y = porcentaje,
@@ -746,7 +908,7 @@ grafico_educacion <- ggplot(
 grafico_educacion
 ```
 
-```{r}
+```{r fig_mapa_educacion, fig.width=11, fig.height=6.2, fig.cap="Mapa de calor de consumo reciente por sustancia y nivel educativo.\\label{fig:mapa-educacion}", warning=FALSE, message=FALSE}
 consumo_sustancias_educacion <- datos_consumo %>%
   filter(!substance %in% excluir_familias) %>%
   group_by(education, family, substance) %>%
@@ -779,13 +941,20 @@ ggplot(consumo_sustancias_educacion,
   )
 ```
 
-### ¿La impulsividad y la búsqueda de sensaciones distinguen a quienes consumen una sola sustancia de quienes consumen varias?
+## Impulsividad, búsqueda de sensaciones y policonsumo
 
-Al igual que en fases anteriores del análisis, para el estudio de la relación entre el policonsumo y los rasgos psicológicos se excluyen sustancias adictivas que, tanto hombres como mujeres, han mostrado un consumo lo suficientemente elevado como para no ser informativo al compararlo con el resto.
+Al igual que en fases anteriores del análisis, para el estudio de la
+relación entre el policonsumo y los rasgos psicológicos se excluyen
+sustancias adictivas que, tanto hombres como mujeres, han mostrado un
+consumo lo suficientemente elevado como para no ser informativo al
+compararlo con el resto.
 
-En este caso, se elimina el alcohol, la cafeina, el chocolate y el semeron. De esta manera, calculamos el nimero de sustancias diferentes consumidas por cada participante, conservando sus puntuaciones de impulsividad (`impulsive`) y búsqueda de sensaciones (`ss`).
+En este caso, se elimina el alcohol, la cafeina, el chocolate y el
+semeron. De esta manera, calculamos el nimero de sustancias diferentes
+consumidas por cada participante, conservando sus puntuaciones de
+impulsividad (`impulsive`) y búsqueda de sensaciones (`ss`).
 
-```{r}
+```{r medida_policonsumo, warning=FALSE, message=FALSE}
 datos_sensaciones <- datos_families %>% 
   filter(!substance %in% c("alcohol", "caff", "choc", "semer")) %>%
   mutate(reciente = if_else(is.na(consumption), NA,
@@ -804,11 +973,20 @@ policonsumo <- datos_sensaciones %>%
 summary(policonsumo)
 ```
 
-El resumen estadístico del conjunto de datos preparado para el análisis muestra que, aproximadamente, la media de sustancias consumidas por persona, tomando como referencia los datos recogidos, es 3. Además, el número de sustancias consideradas va desde 0 hasta 14, donde, a medida que aumenta reduce la cantidad de observaciones asociadas.
+El resumen estadístico del conjunto de datos preparado para el análisis
+muestra que, aproximadamente, la media de sustancias consumidas por
+persona, tomando como referencia los datos recogidos, es 3. Además, el
+número de sustancias consideradas va desde 0 hasta 14, donde, a medida
+que aumenta reduce la cantidad de observaciones asociadas.
 
-De esta manera, consideramos y establecemos cuatro grupos de consumo para el estudio: participantes sin consumo reciente de las sustancias seleccionadas (`0`), consumidores de una única sustancia (`1`), consumidores de dos o tres (`2-3`), y consumidores de cuatro o más (`4+`), que representan el **28,12 %, 14,59 % , 17,56 % y 39,73 %** de la muestra, respectivamente.
+De esta manera, consideramos y establecemos cuatro grupos de consumo
+para el estudio: participantes sin consumo reciente de las sustancias
+seleccionadas (`0`), consumidores de una única sustancia (`1`),
+consumidores de dos o tres (`2-3`), y consumidores de cuatro o más
+(`4+`), que representan el **28,12 %, 14,59 % , 17,56 % y 39,73 %** de
+la muestra, respectivamente.
 
-```{r}
+```{r grupos_policonsumo, warning=FALSE, message=FALSE}
 policonsumo <- policonsumo %>%
   mutate(
     grupo = case_when(
@@ -824,7 +1002,7 @@ table(policonsumo$grupo)
 round(prop.table(table(policonsumo$grupo)) * 100, 2)
 ```
 
-```{r}
+```{r fig_psicometria_policonsumo, fig.width=8, fig.height=5.3, fig.cap="Puntuaciones de impulsividad y búsqueda de sensaciones por grupo de policonsumo.\\label{fig:policonsumo-psicometria}", warning=FALSE, message=FALSE}
 policonsumo %>%
   group_by(grupo) %>%
   summarise(
@@ -863,15 +1041,24 @@ ggplot(policonsumo_grafico, aes(x = grupo, y = valor)) +
 summary(datos_families)
 ```
 
-Podemos observar una **asociación positiva entre ambos rasgos psicológicos y el número de sustancias consumidas**, aunque con diferencias en su comportamiento.
+Podemos observar una **asociación positiva entre ambos rasgos
+psicológicos y el número de sustancias consumidas**, aunque con
+diferencias en su comportamiento.
 
-Por un lado, las distribuciones de la **impulsividad** están solapadas, especialmente, entre los participantes que consumen una o mas sustancias.
+Por un lado, las distribuciones de la **impulsividad** están solapadas,
+especialmente, entre los participantes que consumen una o mas
+sustancias.
 
-Por el contrario, la **búsqueda de sensaciones** muestra una tendencia positiva y progresiva tanto en las medianas como los cuartiles, diferencia que también se observa en las correlaciones de Spearman, siendo mayor que la asociación de la impulsividad.
+Por el contrario, la **búsqueda de sensaciones** muestra una tendencia
+positiva y progresiva tanto en las medianas como los cuartiles,
+diferencia que también se observa en las correlaciones de Spearman,
+siendo mayor que la asociación de la impulsividad.
 
-Para profundizar en estas diferencias, dividimos los participantes que han consumido al menos una sustancia en dos niveles (`High` y `Low`), utilizando la mediana de cada rasgo como referencia.
+Para profundizar en estas diferencias, dividimos los participantes que
+han consumido al menos una sustancia en dos niveles (`High` y `Low`),
+utilizando la mediana de cada rasgo como referencia.
 
-```{r}
+```{r comparacion_policonsumo, warning=FALSE, message=FALSE}
 comparacion <- policonsumo %>%
   filter(n_sustancias >= 1) %>%
   pivot_longer(
@@ -893,11 +1080,14 @@ comparacion <- policonsumo %>%
 comparacion
 ```
 
-Los porcentajes obtenidos muestran que el uso de varias sustancias es **más frecuente** entre quienes cuentan con **puntuaciones elevadas en ambas características**, aunque esta diferencia es mayor para la búsqueda de sensaciones.
+Los porcentajes obtenidos muestran que el uso de varias sustancias es
+**más frecuente** entre quienes cuentan con **puntuaciones elevadas en
+ambas características**, aunque esta diferencia es mayor para la
+búsqueda de sensaciones.
 
-### Policonsumo por etnias
+### Policonsumo por etnia
 
-```{r etnia-policonsumo, fig.width=11, fig.height=6}
+```{r fig_policonsumo_etnia, fig.width=10, fig.height=5.7, fig.cap="Distribución porcentual del policonsumo según etnia.\\label{fig:policonsumo-etnia}", warning=FALSE, message=FALSE}
 # Añadimos la etnia a la clasificación de consumo de cada persona.
 policonsumo_etnia <- policonsumo %>%
   mutate(grupo = case_when(
@@ -945,6 +1135,16 @@ grafico_etnia_policonsumo <- ggplot(policonsumo_etnia,
 grafico_etnia_policonsumo
 ```
 
-### ¿Las sustancias de una misma familia presentan más co-consumo que las de familias diferentes?
+# Discusión
 
-# Conclusiones
+# Conclusión
+
+En esta exploración se han descrito los patrones de consumo reciente por
+edad, género, etnia y nivel educativo, así como su asociación con los
+rasgos de personalidad y el policonsumo. En el análisis desarrollado se
+observan diferencias entre grupos sociodemográficos y asociaciones
+positivas de la búsqueda de sensaciones con el número de sustancias
+consumidas, sin que estos resultados permitan establecer relaciones
+causales. Los resultados se presentan como descriptivos de la muestra
+estudiada y requieren considerar el tamaño de los subgrupos y las
+definiciones de consumo reciente.
