@@ -319,7 +319,7 @@ nrow(personas_semeron)
 datos_families_sin_outliers <- datos_families %>% filter(!id %in% personas_semeron$id)
 ```
 
-Ocho participantes declararon haber consumido Semeron. Aunque representan una proporción reducida de la muestra, conviene mantener sus registros identificados para evaluar su posible influencia en los resultados. 
+Ocho participantes declararon haber consumido Semeron. Aunque representan una proporción reducida de la muestra, conviene mantener sus registros identificados para evaluar su posible influencia en los resultados.
 
 A continuación, examinamos la presencia de valores atípicos en las puntuaciones de los cinco rasgos de personalidad, la impulsividad y la búsqueda de sensaciones, ya que podrían influir en el análisis posterior. Para identificarlos, aplicamos y comparamos tres criterios: la regla de tres sigma, el identificador de Hampel y la regla del boxplot. Los valores señalados se revisarán para determinar si corresponden a errores o a perfiles extremos válidos, sin eliminarlos automáticamente.
 
@@ -359,6 +359,7 @@ outliers %>%
   labs(x = "Participante", y = "Puntuación", color = "Grupo") +
   theme_minimal()
 ```
+
 En esta gráfica, la regla del boxplot establece un intervalo más estrecho y, por tanto, **identifica más valores atípicos** que Hampel y tres sigma. Estos dos últimos métodos presentan límites similares y señalan únicamente las puntuaciones más extremas.
 
 ```{r}
@@ -395,7 +396,6 @@ ggplot(puntos, aes(x = densidad, y = valor)) +
        color = "Grupo") +
   theme_minimal()
 ```
-
 
 Los métodos de tres sigma, Hampel y boxplot identificaron observaciones extremas en algunas puntuaciones de personalidad, impulsividad y búsqueda de sensaciones. Tras su revisión, no se encontraron evidencias de errores de registro o transformación: las puntuaciones señaladas son admisibles y representan perfiles poco frecuentes. Por ello, se conservaron estas observaciones, ya que su eliminación podría excluir variabilidad relevante para el estudio.
 
@@ -473,7 +473,6 @@ corrplot::corrplot(matriz_visual, is.corr = TRUE, col = colores(100),
                   method = "color", addCoef.col = "black",
                   number.cex = 0.8, tl.col = "black", tl.srt = 45)
 ```
-
 
 # Análisis exploratorio
 
@@ -586,6 +585,15 @@ grafico_edad_familias <- ggplot(lineas, aes(x = x, y = porcentaje, group = panel
 
 grafico_edad_familias
 ```
+
+La gráfica muestra que el consumo reciente declarado es generalmente menor en los grupos de mayor edad, aunque la magnitud de las diferencias depende de la sustancia. Los cannabinoides presentan la mayor diferencia entre jóvenes y mayores, seguidos de psicodélicos, estimulantes y empatógenos. En varias familias, las mayores caídas aparecen entre los grupos de 18–24 y 25–34 años. Este patrón es compatible con estudios que relacionan las transiciones hacia la vida adulta con cambios en el consumo, aunque nuestros datos no permiten establecer sus causas. [pmc.ncbi.nlm.nih.gov](https://pmc.ncbi.nlm.nih.gov/articles/PMC3828971/)
+
+El alcohol y la nicotina mantienen una presencia considerable en todas las edades. El alcohol pasa del 96 % entre los más jóvenes al 78 % en mayores de 65 años, mientras que la nicotina desciende del 76 % al 28 %. En cambio, psicodélicos, estimulantes, empatógenos y disociativos presentan porcentajes observados nulos en el último grupo. Estas cifras indican consumo durante los últimos doce meses, pero no permiten conocer su frecuencia, cantidad ni la existencia de dependencia.
+
+La principal excepción al descenso general aparece en los depresores, cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65. Una posible explicación sería la presencia de benzodiacepinas, cuyo uso por prescripción aumenta con la edad en estudios poblacionales; sin embargo, habría que desglosar esta familia y conocer los motivos de consumo para comprobarlo en nuestra muestra. También se observa un pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a variabilidad muestral y no necesariamente a una tendencia real. [pubmed.ncbi.nlm.nih.gov](https://pubmed.ncbi.nlm.nih.gov/25517224/)
+
+Finalmente, las diferencias deben interpretarse con cautela porque se comparan personas distintas, no la evolución de los mismos participantes. La escasa representación de mayores de 65 años hace que unas pocas respuestas modifiquen considerablemente sus porcentajes, y un 0 % no demuestra ausencia de consumo en la población. Por tanto, los resultados muestran una asociación entre edad y consumo en esta muestra, pero no permiten afirmar que envejecer provoque su abandono ni generalizar directamente las cifras a toda la población.
+
 #### Genero
 
 ```{r}
@@ -610,8 +618,7 @@ grafico_genero <- consumo_genero %>%
 grafico_genero
 ```
 
-
-A primera vista, el chocolate, la cafeína y el alcohol presentan porcentajes de consumo reciente muy elevados y similares entre hombres y mujeres. **La nicotina constituye una excepción entre las sustancias de consumo socialmente extendido**, ya que muestra un porcentaje claramente superior en los hombres.
+A primera vista, el chocolate, la cafeína y el alcohol presentan porcentajes de consumo reciente muy elevados y casi solapados entre hombres y mujeres. **La nicotina constituye una excepción entre las sustancias de consumo socialmente extendido**, ya que muestra un porcentaje claramente superior en los hombres.
 
 En el resto de las sustancias representadas también se observa mayor consumo reciente declarado entre los hombres. La separación es especialmente visible en cannabis y *legal highs*, seguidas de sustancias como éxtasis, anfetaminas y setas. Por tanto, algunas de las mayores diferencias en puntos porcentuales aparecen en sustancias con un consumo relativamente extendido, fuera del grupo de las más consumidas.
 
@@ -619,7 +626,104 @@ En las sustancias menos consumidas, como heroína, sustancias volátiles y crack
 
 #### Etnia
 
+```{r etnia-sustancias, fig.width=13, fig.height=6}
+
+# Mantenemos el mismo orden de etnias en los tres paneles.
+orden_etnias <- perfil_personas %>%
+  filter(!is.na(ethnicity)) %>%
+  count(ethnicity, sort = TRUE) %>%
+  pull(ethnicity) %>% as.character()
+
+# Intervalos de confianza de Wilson al 95 %.
+etnia_intervalos <- consumo_etnia %>%
+  filter(substance %in% c("alcohol", "nicotine", "cannabis"), n > 0, ethnicity != "Black-Asian") %>%
+  mutate(p = consumidores / n,
+         centro = (p + 1.96^2 / (2 * n)) / (1 + 1.96^2 / n),
+         margen = 1.96 * sqrt(p * (1 - p) / n + 1.96^2 / (4 * n^2)) /
+           (1 + 1.96^2 / n),
+         inferior = 100 * (centro - margen),
+         superior = 100 * (centro + margen),
+         ethnicity = factor(ethnicity, levels = rev(orden_etnias)),
+         substance = factor(substance, levels = c("alcohol", "nicotine", "cannabis")))
+
+grafico_etnia_sustancias <- ggplot(etnia_intervalos,
+                                   aes(x = porcentaje, y = ethnicity, color = substance)) +
+  geom_segment(aes(x = inferior, xend = superior, yend = ethnicity), linewidth = 1) +
+  geom_point(size = 3) +
+  geom_text(aes(label = paste0(consumidores, "/", n)), vjust = -1, size = 3,
+            color = "grey30") +
+  facet_wrap(~ substance, nrow = 1) +
+  scale_color_manual(values = c(alcohol = "#0072B2", nicotine = "#E69F00",
+                                cannabis = "#1B9E77")) +
+  scale_x_continuous(breaks = seq(0, 100, 25), limits = c(0, 100),
+                     labels = function(x) paste0(x, "%"),
+                     expand = expansion(mult = 0.08)) +
+  scale_y_discrete(expand = expansion(add = 0.8)) +
+  labs(title = "Consumo reciente por etnia y sustancia",
+       subtitle = "Puntos: porcentaje observado. Líneas: intervalo de Wilson del 95 %.",
+       x = "Consumo en los últimos 12 meses", y = NULL,
+       caption = "Etiquetas: consumidores / respuestas disponibles. Los intervalos no corrigen sesgos de selección.") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none", panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(color = "grey90", linetype = "dotted"),
+        strip.text = element_text(face = "bold", size = 12),
+        plot.title = element_text(face = "bold"),
+        plot.caption = element_text(hjust = 0))
+
+grafico_etnia_sustancias
+
+```
+
+```{r etnia-policonsumo, fig.width=11, fig.height=6}
+# Añadimos la etnia a la clasificación de consumo de cada persona.
+policonsumo_etnia <- policonsumo %>%
+  mutate(grupo = case_when(
+    n_sustancias == 0 ~ "None",
+    n_sustancias == 1 ~ "One",
+    n_sustancias == 2 | n_sustancias == 3 ~ "Two-Three",
+    n_sustancias >= 4 ~ "Four or more"
+  ), grupo = factor(grupo, levels = c("None", "One", "Two-Three", "Four or more"))) %>%
+  left_join(perfil_personas %>% select(id, ethnicity), by = "id") %>%
+  filter(!is.na(ethnicity), ethnicity != "Black-Asian", !is.na(grupo)) %>%
+  count(ethnicity, grupo, .drop = FALSE) %>%
+  group_by(ethnicity) %>%
+  mutate(total = sum(n), porcentaje = 100 * n / total) %>%
+  ungroup() %>%
+  filter(total > 0) %>%
+  mutate(ethnicity = factor(ethnicity, levels = rev(orden_etnias)))
+
+# Indicamos cuántas personas tienen una clasificación disponible en cada etnia.
+rotulos_etnia <- policonsumo_etnia %>%
+  distinct(ethnicity, total) %>%
+  mutate(rotulo = paste0(ethnicity, " (n = ", total, ")"))
+
+grafico_etnia_policonsumo <- ggplot(policonsumo_etnia,
+                                    aes(x = porcentaje, y = ethnicity, fill = grupo)) +
+  geom_col(width = 0.7, position = position_stack(reverse = TRUE)) +
+  geom_text(aes(label = if_else(porcentaje >= 7, sprintf("%.0f%%", porcentaje), "")),
+            position = position_stack(vjust = 0.5, reverse = TRUE),
+            color = "white", fontface = "bold", size = 3.5) +
+  scale_y_discrete(labels = setNames(rotulos_etnia$rotulo, rotulos_etnia$ethnicity)) +
+  scale_fill_manual(values = c("None" = "#667788", "One" = "#168AAD",
+                               "Two-Three" = "#E69F00", "Four or more" = "#B54D00"),
+                    drop = FALSE)  +
+  scale_x_continuous(breaks = seq(0, 100, 25),
+                     labels = function(x) paste0(x, "%"),
+                     expand = expansion(mult = c(0, 0.01))) +
+  labs(title = "Distribución del policonsumo por etnia",
+       x = "Porcentaje de participantes", y = NULL, fill = NULL,
+       caption = "Consumo en los últimos 12 meses. Excluidos alcohol, cafeína, chocolate y Semeron.") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top", panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        plot.title = element_text(face = "bold"),
+        plot.caption = element_text(hjust = 0))
+
+grafico_etnia_policonsumo
+```
+
 ```{r}
+
 consumo_grupos <- datos_consumo %>%
   filter(!substance %in% c("choc", "semer")) %>%
   mutate(grupo = if_else(substance %in% c("alcohol", "caff", "nicotine"),
