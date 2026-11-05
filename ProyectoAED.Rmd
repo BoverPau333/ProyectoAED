@@ -264,14 +264,17 @@ names(datos) <- nombres
 colnames(datos)
 ```
 
-Entre estas, se identifican variables sociodemográficas, que incluyen
-aspectos como la edad, el género, el nivel educativo y la etnia. Por
-otro lado, las variables psicológicas permiten evaluar distintos rasgos
-de personalidad, como la impulsividad, la búsqueda de sensaciones o las
-cinco dimensiones del modelo **Big Five**.
+Entre estas, se identifican variables **sociodemográficas**, que
+incluyen aspectos como la edad, el género, el nivel educativo y la
+etnia, variables **psicológicas**, que permitirán evaluar distintos
+rasgos de personalidad y su influencia en el consumo, y variables **de
+consumo**, donde cada una de las 19 sustancias dispone de una columna
+propia que registra el tiempo transcurrido desde su último consumo.
 
-Este último es un modelo ampliamente utilizado en psicología para
-describir la personalidad humana a partir de cinco grandes rasgos:
+Entre las variables psicológicas se encuentran la impulsividad, la
+búsqueda de sensaciones y las cinco dimensiones del modelo **Big Five**,
+ampliamente utilizado en psicología para describir la personalidad
+mediante los siguientes rasgos:
 
 - **Neuroticismo (`nscore`):** mide la tendencia a experimentar
   emociones negativas, como ansiedad, estrés o preocupación.
@@ -287,55 +290,58 @@ describir la personalidad humana a partir de cinco grandes rasgos:
 Cada dimensión se evalúa de forma independiente, de manera que una
 puntuación más elevada indica una mayor presencia del rasgo
 correspondiente. Estas variables permiten explorar posibles asociaciones
-entre las características de personalidad de los participantes y sus
-patrones de consumo de sustancias.
+entre las características de personalidad de los participantes y su
+impacto en el consumo de sustancias.
+
+Por último, las variables de consumo se encuentran codificadas mediante
+siete categorías ordinales (`CL0`–`CL6`), que indican el tiempo
+transcurrido desde el último consumo de cada sustancia, tal como se
+recoge en la Tabla \\ref{tab}. Esta codificación permite distinguir
+entre quienes nunca han consumido una sustancia y quienes lo han hecho
+en diferentes periodos temporales.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{cl}
+\toprule
+\textbf{Código} & \textbf{Último consumo} \\
+\midrule
+CL0 & Nunca \\
+CL1 & Hace más de 10 años \\
+CL2 & En los últimos 10 años, pero no en el último año \\
+CL3 & En el último año, pero no en el último mes \\
+CL4 & En el último mes, pero no en la última semana \\
+CL5 & En la última semana, pero no en el último día \\
+CL6 & En el último día \\
+\bottomrule
+\end{tabular}
+\caption{Codificación temporal del consumo de sustancias.}
+\label{tab:codificacion_consumo}
+\end{table}
 
 A partir de un resumen estadístico inicial, se observa que las variables
 sociodemográficas y psicométricas presentan valores numéricos decimales,
-tanto positivos como negativos. Esto se debe a que los datos han sido
-previamente codificados y transformados para facilitar su utilización en
-algoritmos de aprendizaje automático.
+tanto positivos como negativos.
 
-Aunque estas transformaciones resultan útiles para el modelado,
-dificultan la interpretación directa de las variables. Por ello, antes
-de comenzar el análisis exploratorio, recuperaremos las categorías
-originales de las variables sociodemográficas y las puntuaciones del Big
-Five, con el objetivo de facilitar la visualización de los datos y la
-interpretación de los resultados.
+Identificadas las variables, y obviando las asociadas al consumo, se
+examinan sus valores originales mediante un resumen estadístico para
+determinar qué transformaciones son necesarias para facilitar su
+interpretación.
 
 ```{r}
-
-summary(datos[1:13])
-
+summary(datos[2:13])
 ```
 
-Las variables relacionadas con el consumo de sustancias están
-codificadas mediante siete categorías ordinales, desde **CL0 hasta
-CL6**, que indican el tiempo transcurrido desde el último consumo de
-cada sustancia.
-
-- **CL0:** Nunca ha consumido la sustancia.
-
-- **CL1:** La consumió hace más de 10 años.
-
-- **CL2:** La consumió durante los últimos 10 años, pero no en el último
-  año.
-
-- **CL3:** La consumió durante el último año, pero no en el último mes.
-
-- **CL4:** La consumió durante el último mes, pero no en la última
-  semana.
-
-- **CL5:** La consumió durante la última semana, pero no en el último
-  día.
-
-- **CL6:** La consumió durante el último día.
-
-Esto permite entender los patrones de consumo de los participantes.
-
-```{r}
-sort(unique(datos$alcohol))
-```
+Se observa que las variables sociodemográficas están representadas
+mediante códigos numéricos en lugar de sus categorías originales,
+mientras que las variables psicológicas se recogen como puntuaciones
+transformadas respecto a las escalas de los cuestionarios. Esto se debe
+a que los datos han sido previamente codificados y transformados para
+facilitar su utilización en algoritmos de aprendizaje automático. Por
+tanto, será necesario recuperar las categorías originales de las
+variables sociodemográficas y las puntuaciones del modelo *Big Five*,
+además de aplicar las transformaciones necesarias a las restantes
+variables psicológicas.
 
 ###Comprobación de datos faltantes
 
