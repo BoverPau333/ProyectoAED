@@ -157,16 +157,11 @@ datos <- read.csv(
 )
 ```
 
-
-
-```{r obtener_metadatos, results="hide", warning=FALSE, message=FALSE}
+```{r obtener_metadatos, include = FALSE, warning=FALSE, message=FALSE}
 metadatos <- jsonlite::fromJSON(
   "https://archive.ics.uci.edu/api/dataset?id=373"
 )
-
-head(metadatos$data$variables)
 ```
-
 
 Como fuente complementaria, se emplea una clasificación farmacológica
 basada en [*The Drugs Wheel*](https://thedrugswheel.com/). Esta
@@ -281,7 +276,6 @@ Esto permite entender los patrones de consumo de los participantes.
 ```{r}
 sort(unique(datos$alcohol))
 ```
-
 
 ###Comprobación de datos faltantes
 
