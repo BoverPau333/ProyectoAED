@@ -218,8 +218,6 @@ datos <- read.csv(
 )
 ```
 
-
-
 ```{r obtener_metadatos, results="hide", warning=FALSE, message=FALSE}
 metadatos <- jsonlite::fromJSON(
   "https://archive.ics.uci.edu/api/dataset?id=373"
@@ -227,7 +225,6 @@ metadatos <- jsonlite::fromJSON(
 
 head(metadatos$data$variables)
 ```
-
 
 Como fuente complementaria, se emplea una clasificación farmacológica
 basada en [*The Drugs Wheel*](https://thedrugswheel.com/). Esta
@@ -251,10 +248,9 @@ classification <- tables[[1]]
 Una vez importados los datos, se examina la estructura y el contenido
 original de ambos datasets para identificar las transformaciones a
 realizar antes del análisis exploratorio y obtener un conjunto de datos
-consistente.
-El nombre de las variables no es suficientemente representativo con los
-valores orirginales. Se necesita acceder a los metadatos para obtener
-los valores más descriptivos.
+consistente. El nombre de las variables no es suficientemente
+representativo con los valores orirginales. Se necesita acceder a los
+metadatos para obtener los valores más descriptivos.
 
 El conjunto de datos está formado por **32 variables**, que recogen
 información sobre las características sociodemográficas, psicológicas y
@@ -332,10 +328,6 @@ CL6 & En el último día \\
 \label{tab:codificacion_consumo}
 \end{table}
 
-A partir de un resumen estadístico inicial, se observa que las variables
-sociodemográficas y psicométricas presentan valores numéricos decimales,
-tanto positivos como negativos.
-
 Identificadas las variables, y obviando las asociadas al consumo, se
 examinan sus valores originales mediante un resumen estadístico para
 determinar qué transformaciones son necesarias para facilitar su
@@ -346,16 +338,15 @@ summary(datos[2:13])
 ```
 
 Se observa que las variables sociodemográficas están representadas
-mediante códigos numéricos en lugar de sus categorías originales,
-mientras que las variables psicológicas se recogen como puntuaciones
-transformadas respecto a las escalas de los cuestionarios. Esto se debe
-a que los datos han sido previamente codificados y transformados para
-facilitar su utilización en algoritmos de aprendizaje automático. Por
-tanto, será necesario recuperar las categorías originales de las
-variables sociodemográficas y las puntuaciones del modelo *Big Five*,
-además de aplicar las transformaciones necesarias a las restantes
-variables psicológicas.
-
+mediante códigos numéricos (positivos y negativos) en lugar de sus
+categorías originales, mientras que las variables psicológicas se
+recogen como puntuaciones transformadas respecto a las escalas de los
+cuestionarios. Esto se debe a que los datos han sido previamente
+codificados y transformados para facilitar su utilización en algoritmos
+de aprendizaje automático. Por tanto, será necesario recuperar las
+categorías originales de las variables sociodemográficas y las
+puntuaciones del modelo *Big Five*, además de aplicar las
+transformaciones necesarias a las restantes variables psicológicas.
 
 ###Comprobación de datos faltantes
 
@@ -663,7 +654,6 @@ grafico_atipicos <- ggplot(puntos, aes(id, valor)) +
 grafico_atipicos
 ```
 
-
 En esta gráfica, la regla del boxplot establece un intervalo más
 estrecho y, por tanto, **identifica más valores atípicos** que Hampel y
 tres sigma. Estos dos últimos métodos presentan límites similares y
@@ -958,7 +948,6 @@ grafico_etnia_sustancias <- ggplot(
 
 grafico_etnia_sustancias
 ```
-
 
 ```{r fig_etnia_grupos, fig.cap="Consumo reciente por etnia y grupo de sustancias. Etiquetas: consumidores/respuestas disponibles. El grupo socialmente extendido incluye alcohol, cafeína y nicotina; se excluyen chocolate y Semeron."}
 consumo_grupos <- datos_consumo %>%
