@@ -332,15 +332,15 @@ summary(datos[2:13])
 Se observa que las variables sociodemográficas están representadas
 mediante códigos numéricos en lugar de sus categorías originales,
 mientras que las variables psicológicas presentan puntuaciones
-directamente extraidas de las escalas de los cuestionarios. Estas
-codificaciones facilitan su utilización en algoritmos de aprendizaje
-automático, pero dificultan su interpretación.
+transformadas respecto a las escalas de los cuestionarios. Estas
+transformaciones facilitan su utilización en algoritmos de aprendizaje
+automático, pero dificultan su interpretación directa.
 
 Por ello, se recuperarán las categorías sociodemográficas y las
 puntuaciones originales del modelo *Big Five*, además de realizar las
 transformaciones necesarias sobre las restantes variables psicológicas.
 
-###Comprobación de datos faltantes
+### Comprobación de datos faltantes
 
 Queremos comprobar que no tenemos datos faltantes en el dataset. Como
 podemos observar todas las instancias estan completas.
