@@ -101,7 +101,7 @@ El análisis se desarrolla en R, utilizando bibliotecas vistas en clase
 que facilitan la obtención, transformación y exploración de datos, así
 como la representación gráfica de los resultados.
 
-```{r paquetes, results="hide", warning=FALSE, message=FALSE}
+```{r paquetes, results="hide", warning=FALSE, message=FALSE,include=FALSE}
 packages = c("tidyverse","knitr", "rvest", "corrplot","jsonlite","ggplot2")
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
@@ -114,10 +114,8 @@ search()
 ```
 
 ```{r  echo = FALSE}
-url_UCI <- paste0(
-  "https://archive.ics.uci.edu/",
-  "static/public/373/drug+consumption+quantified.zip"
-)
+url_UCI <- "https://archive.ics.uci.edu/static/public/373/drug+consumption+quantified.zip"
+
 ```
 
 ```{r estilo-graficas, include=FALSE}
@@ -190,47 +188,29 @@ dibujar_correlaciones <- function(matriz) {
 
 ## Obtención de datos
 
-El conjunto de datos utilizado corresponde a *Drug Consumption
-(Quantified)*
-(<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>),
+El conjunto de datos utilizado corresponde a [Drug Consumption
+(Quantified)](<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>),
 obtenido del repositorio UCI Machine Learning. Este recoge información
 de 1.885 participantes mediante encuestas que registran sus
 características sociodemográficas y psicológicas y el momento del último
 consumo de 19 sustancias, lo que permitirá explorar las relaciones entre
 los perfiles individuales y los distintos patrones de consumo.
 
-```{r descarga_datos, include = FALSE, warning=FALSE, message=FALSE}
-# Creamos la carpeta donde guardaremos los datos
+```{r descarga_datos, warning=FALSE, message=FALSE, results="hide"}
 dir.create("data", showWarnings = FALSE)
 
 # Descargamos el archivo comprimido del dataset desde UCI.
-download.file(
-  url = "https://archive.ics.uci.edu/static/public/373/drug+consumption+quantified.zip",
-  destfile = "data/drug_consumption.zip",
-  mode = "wb"
-)
+download.file(url = url_UCI, destfile = "data/drug_consumption.zip",mode = "wb")
 
-# Extraemos los archivos en la carpeta data.
 unzip("data/drug_consumption.zip", exdir = "data")
 
-# Importamos los datos: están separados por comas y no tienen cabecera.
-datos <- read.csv(
-  "data/drug_consumption.data",
-  header = FALSE,
-  stringsAsFactors = FALSE
-)
-```
-
-```{r obtener_metadatos, results="hide", warning=FALSE, message=FALSE}
-metadatos <- jsonlite::fromJSON(
-  "https://archive.ics.uci.edu/api/dataset?id=373"
-)
-
-head(metadatos$data$variables)
+datos <- read.csv("data/drug_consumption.data",header = FALSE,stringsAsFactors = FALSE)
+#Descargamos tambien los metadatos del dataset
+metadatos <- jsonlite::fromJSON("https://archive.ics.uci.edu/api/dataset?id=373")
 ```
 
 Como fuente complementaria, se emplea una clasificación farmacológica
-basada en [*The Drugs Wheel*](https://thedrugswheel.com/). Esta
+basada en [The Drugs Wheel](https://thedrugswheel.com/). Esta
 distingue siete familias que permiten agrupar las sustancias del
 conjunto original según sus características farmacológicas para ampliar
 el análisis de sus patrones de consumo.
@@ -333,7 +313,7 @@ determinar qué transformaciones son necesarias para facilitar su
 interpretación.
 
 ```{r}
-summary(datos[2:13])
+summary(datos[2:10])
 ```
 
 Se observa que las variables sociodemográficas están representadas
@@ -363,9 +343,7 @@ Al no presentar ninguna de estas anomalías, no es necesario realizar
 operaciones de imputación ni eliminación de registros. No obstante, en
 los nombres de las variables mostrados durante la comprobación se
 observa una errata en la denominación de la impulsividad, registrada
-como `impuslive`.
-
-Por tanto, se corrige a `impulsive` para facilitar su identificación y
+como `impuslive`.Por tanto, se corrige a `impulsive` para facilitar su identificación y
 posterior tratamiento.
 
 ```{r corregir_impulsive, results="hide", warning=FALSE, message=FALSE}
@@ -381,36 +359,25 @@ en la documentación de UCI mediante la función `factor()`.
 ```{r decodificacion_sociodemografica, results="hide", warning=FALSE, message=FALSE}
 datos <- datos %>%
   mutate(
-    age = factor(age,
-                 levels = sort(unique(age)),
-                 labels = c("18-24", "25-34", "35-44", "45-54", "55-64", "65+"),
-                 ordered = TRUE),
+    age = factor(age,levels = sort(unique(age)),ordered = TRUE,
+                 labels = c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")),
 
-    gender = factor(gender,
-                    levels = sort(unique(gender)),
+    gender = factor(gender,levels = sort(unique(gender)),
                     labels = c("Male", "Female")),
 
-    education = factor(education,
-                       levels = sort(unique(education)),
+    education = factor(education, levels = sort(unique(education)),ordered = TRUE,
                        labels = c("<16 years", "16 years", "17 years", "18 years",
                                   "Some college", "Prof. certificate",
-                                  "Bachelor's", "Master's", "Doctorate"),
-                       ordered = TRUE),
+                                  "Bachelor's", "Master's", "Doctorate")),
 
-    country = factor(country,
-                     levels = sort(unique(country)),
+    country = factor(country, levels = sort(unique(country)),
                      labels = c("USA", "New Zealand", "Other",
                                 "Australia", "Ireland", "Canada", "UK")),
 
-    ethnicity = factor(ethnicity,
-                       levels = sort(unique(ethnicity)),
+    ethnicity = factor(ethnicity, levels = sort(unique(ethnicity)),
                        labels = c("Black", "Asian", "White",
-                                  "White-Black", "Other",
-                                  "White-Asian", "Black-Asian"))
+                                  "White-Black", "Other","White-Asian", "Black-Asian"))
   )
-
-summary(datos[2:6])
-# lapply(datos[c("age", "gender", "education", "country", "ethnicity")], table)
 ```
 
 ### Transformación de variables psicológicas
@@ -428,13 +395,8 @@ exactamente.
 big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
 
 # Puntuaciones originales publicadas por UCI teniendo en cuenta los faltantes
-scores <- list(
-  nscore = 12:60,
-  escore = c(16, 18:56, 58:59),
-  oscore = c(24, 26, 28:60),
-  ascore = c(12, 16, 18, 23:60),
-  cscore = c(17, 19:57, 59)
-)
+scores <- list( nscore = 12:60, escore = c(16, 18:56, 58:59),
+  oscore = c(24, 26, 28:60), ascore = c(12, 16, 18, 23:60), cscore = c(17, 19:57, 59))
 
 # recuperar las puntuaciones originales sin transformación lineal, asi obtenemos exactamente los valores originales
 
@@ -535,8 +497,6 @@ datos_families <- datos %>%
     values_to = "consumption"
   ) %>%
   left_join(uci_classification, by = "substance")
-
-head(datos_families)
 ```
 
 ```{r}
@@ -588,17 +548,12 @@ ello, identificamos estos registros para comparar los resultados con y
 sin su inclusión y evaluar si afectan a las conclusiones del análisis.
 
 ```{r control_semeron, warning=FALSE, message=FALSE}
-personas_semeron <- datos_families %>%
-  filter(substance == "semer", !is.na(consumption), consumption != "Never") %>%
-  select(id, consumption)
+personas_semeron <- datos_families %>% filter(substance == "semer", 
+                 !is.na(consumption), consumption != "Never") %>% select(id, consumption)
 
-head(personas_semeron,3)
+datos_families_sin_outliers <- datos_families %>% filter(!id %in% personas_semeron$id)
 nrow(personas_semeron)
 
-```
-
-```{r exclusion_semeron, results="hide", warning=FALSE, message=FALSE}
-datos_families_sin_outliers <- datos_families %>% filter(!id %in% personas_semeron$id)
 ```
 
 Ocho participantes declararon haber consumido Semeron. Aunque
@@ -671,19 +626,13 @@ variabilidad relevante para el estudio.
 ## Correlaciones entre personalidad y consumo
 
 ```{r correlaciones_sustancias, warning=FALSE, message=FALSE}
-consumos <- datos_families %>%
-  select(id, substance, consumption) %>%
-  distinct() %>%
-  pivot_wider(names_from = substance, values_from = consumption)
+consumos <- datos_families %>% select(id, substance, consumption) %>%
+  distinct() %>% pivot_wider(names_from = substance, values_from = consumption)
 
-personalidad <- datos_families %>%
-  select(id, nscore, escore, oscore, ascore, cscore, impulsive, ss) %>%
-  distinct()
+personalidad <- datos_families %>% select(id, nscore, escore, oscore, ascore, cscore, impulsive, ss) %>% distinct()
 
-datos_cor <- personalidad %>%
-  left_join(consumos, by = "id") %>%
-  select(-id, -semer) %>%
-  mutate(across(where(is.ordered), as.integer))
+datos_cor <- personalidad %>% left_join(consumos, by = "id") %>%
+  select(-id, -semer) %>% mutate(across(where(is.ordered), as.integer))
 
 correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
 ```
@@ -708,8 +657,7 @@ datos_consumo <- datos_families %>%
 ```
 
 ```{r perfil_muestra, warning=FALSE, message=FALSE}
-perfil_personas <- datos_consumo %>%
-  distinct(id, age, gender, ethnicity)
+perfil_personas <- datos_consumo %>% distinct(id, age, gender, ethnicity)
 
 table(perfil_personas$age)
 table(perfil_personas$gender)
@@ -903,18 +851,10 @@ impulsividad (`impulsive`) y búsqueda de sensaciones (`ss`).
 ```{r medida_policonsumo, warning=FALSE, message=FALSE}
 datos_sensaciones <- datos_families %>% 
   filter(!substance %in% c("alcohol", "caff", "choc", "semer")) %>%
-  mutate(reciente = if_else(is.na(consumption), NA,
-                            as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
+  mutate(reciente = if_else(is.na(consumption), NA, as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
 
-
-policonsumo <- datos_sensaciones %>%
-  group_by(id) %>%
-  summarise(
-    n_sustancias = sum(reciente),
-    impulsive = first(impulsive),
-    cscore = first(cscore),
-    ss = first(ss)
-  )
+policonsumo <- datos_sensaciones %>% group_by(id) %>%
+  summarise( n_sustancias = sum(reciente), impulsive = first(impulsive),cscore = first(cscore), ss = first(ss))
 
 summary(policonsumo)
 ```
@@ -982,23 +922,11 @@ han consumido al menos una sustancia en dos niveles (`High` y `Low`),
 utilizando la mediana de cada rasgo como referencia.
 
 ```{r comparacion_policonsumo, warning=FALSE, message=FALSE}
-comparacion <- policonsumo %>%
-  filter(n_sustancias >= 1) %>%
-  pivot_longer(
-    cols = c(impulsive, ss),
-    names_to = "rasgo",
-    values_to = "valor"
-  ) %>%
-  group_by(rasgo) %>%
-  mutate(
-    nivel = if_else(valor > median(valor), "High", "Low"),
-    multiple = n_sustancias >= 2
-  ) %>%
-  group_by(rasgo, nivel) %>%
-  summarise(
-    n = n(),
-    porcentaje_multiple = round(mean(multiple) * 100, 2)
-  )
+comparacion <- policonsumo %>% filter(n_sustancias >= 1) %>%
+  pivot_longer( cols = c(impulsive, ss), names_to = "rasgo", values_to = "valor" ) %>%
+  group_by(rasgo) %>% mutate(nivel = if_else(valor > median(valor), "High", "Low"),
+  multiple = n_sustancias >= 2) %>% group_by(rasgo, nivel) %>%
+  summarise( n = n(), porcentaje_multiple = round(mean(multiple) * 100, 2))
 
 comparacion
 ```
