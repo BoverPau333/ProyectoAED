@@ -12,7 +12,6 @@ affiliation:
     address: |
       Universitat de València, Grado en Ciencia de Datos,
       València, España.
-    email: "PENDIENTE_DE_COMPLETAR"
 authorcitation: |
   Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
 output:
@@ -46,23 +45,10 @@ abstract: |
 keywords: |
   análisis exploratorio de datos; consumo de sustancias; Big Five;
   impulsividad; búsqueda de sensaciones; prevalencia; policonsumo
-acknowledgement: |
-  Pendiente de completar o retirar por los autores antes de la entrega.
-authorcontributions: |
-  Pendiente de completar: contribución específica de cada autor.
-funding: |
-  Pendiente de confirmar por los autores si se recibió financiación.
-institutionalreview: |
-  Pendiente de verificar la declaración ética correspondiente al uso
-  secundario del conjunto de datos público.
-informedconsent: |
-  Pendiente de verificar en la documentación del estudio original.
 dataavailability: |
   Los datos analizados proceden del repositorio público UCI Machine Learning
   Repository, Drug Consumption (Quantified):
   https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified.
-conflictsofinterest: |
-  Pendiente de declaración por los autores.
 abbreviations:
   - short: UCI
     long: University of California, Irvine
@@ -126,7 +112,6 @@ package.check <- lapply(packages, FUN = function(x) {
 search()
 ```
 
-<<<<<<< HEAD
 ```{r  echo = FALSE}
 url_UCI <- paste0(
   "https://archive.ics.uci.edu/",
@@ -200,8 +185,6 @@ dibujar_correlaciones <- function(matriz) {
 
 ```
 
-=======
->>>>>>> 3f0f32ad6eddcc5787a32f56081c98d77acdc34e
 ## Obtención de datos
 
 El conjunto de datos utilizado corresponde a *Drug Consumption
@@ -319,14 +302,6 @@ puntuación más elevada indica una mayor presencia del rasgo
 correspondiente. Estas variables permiten explorar posibles asociaciones
 entre las características de personalidad de los participantes y sus
 patrones de consumo de sustancias.
-
-```{r nombres_variables, results="hide", warning=FALSE, message=FALSE}
-nombres <- metadatos$data$variables$name
-stopifnot(length(nombres) == ncol(datos))
-names(datos) <- nombres
-
-names(datos)
-```
 
 A partir de un resumen estadístico inicial, se observa que las variables
 sociodemográficas y psicométricas presentan valores numéricos decimales,
