@@ -332,7 +332,7 @@ summary(datos[2:13])
 Se observa que las variables sociodemográficas están representadas
 mediante códigos numéricos en lugar de sus categorías originales,
 mientras que las variables psicológicas presentan puntuaciones
-transformadas respecto a las escalas de los cuestionarios. Estas
+directamente extraidas de las escalas de los cuestionarios. Estas
 codificaciones facilitan su utilización en algoritmos de aprendizaje
 automático, pero dificultan su interpretación.
 
