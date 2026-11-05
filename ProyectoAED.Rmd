@@ -15,6 +15,10 @@ affiliation:
     email: "PENDIENTE_DE_COMPLETAR"
 authorcitation: |
   Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
+output:
+  rticles::mdpi_article:
+     extra_dependencies: ["longtable", "xurl", "fvextra"]
+  pdf_document: default
 journal: notspecified
 type: article
 status: submit
@@ -67,14 +71,12 @@ abbreviations:
   - short: BIS-11
     long: Barratt Impulsiveness Scale
 endnotes: false
-output:
-  rticles::mdpi_article:
-    extra_dependencies: longtable
 editor_options:
   markdown:
     wrap: 72
 header-includes:
   - \providecommand{\pandocbounded}[1]{#1}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
 ---
 
 # Introducción
@@ -95,12 +97,13 @@ buscando identificar asociaciones sin establecer relaciones causales.
 
 ```{r mdpi_setup, include=FALSE}
 knitr::opts_chunk$set(
-  echo = FALSE,
-  message = FALSE,
-  warning = FALSE,
-  fig.align = "center",
+  echo = TRUE, message = FALSE, warning = FALSE,
+  fig.width = 7, fig.height = 4,
+  out.width = "\\linewidth", fig.align = "center",
   comment = NA
 )
+
+options(width = 80)
 ```
 
 ## Entorno de análisis y paquetes
@@ -110,7 +113,7 @@ que facilitan la obtención, transformación y exploración de datos, así
 como la representación gráfica de los resultados.
 
 ```{r paquetes, results="hide", warning=FALSE, message=FALSE}
-packages = c("tidyverse","knitr", "rvest", "corrplot","tidyverse","jsonlite")
+packages = c("tidyverse","knitr", "rvest", "corrplot","jsonlite")
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     install.packages(x, dependencies = TRUE,repos='https://cloud.r-project.org')
@@ -342,18 +345,6 @@ table(datos$ss)
 ## Clasificación de sustancias y construcción de variables de consumo
 
 ### Clasificación farmacológica
-
-```{r descarga_clasificacion, results="hide", warning=FALSE, message=FALSE}
-url <- "https://www.gov.scot/publications/understanding-patterns-use-motives-harms-new-psychoactive-substances-scotland/pages/3/"
-
-tables <- html_table(
-  html_elements(read_html(url), "table"),
-  header = TRUE
-)
-
-classification <- tables[[1]]
-head(classification$Name)
-```
 
 ```{r familias_sustancias, results="hide", warning=FALSE, message=FALSE}
 families <- classification$Name
