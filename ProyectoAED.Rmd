@@ -248,9 +248,7 @@ classification <- tables[[1]]
 Una vez importados los datos, se examina la estructura y el contenido
 original de ambos datasets para identificar las transformaciones a
 realizar antes del análisis exploratorio y obtener un conjunto de datos
-consistente. El nombre de las variables no es suficientemente
-representativo con los valores orirginales. Se necesita acceder a los
-metadatos para obtener los valores más descriptivos.
+consistente.
 
 El conjunto de datos está formado por **32 variables**, que recogen
 información sobre las características sociodemográficas, psicológicas y
@@ -281,7 +279,7 @@ consumo**, donde cada una de las 19 sustancias dispone de una columna
 propia que registra el tiempo transcurrido desde su último consumo.
 
 Entre las variables psicológicas se encuentran la impulsividad, la
-búsqueda de sensaciones y las cinco dimensiones del modelo **Big Five**,
+búsqueda de sensaciones y las cinco dimensiones del modelo *Big Five*,
 ampliamente utilizado en psicología para describir la personalidad
 mediante los siguientes rasgos:
 
@@ -296,18 +294,12 @@ mediante los siguientes rasgos:
 - **Responsabilidad (`cscore`):** mide aspectos relacionados con la
   organización, la autodisciplina y el cumplimiento de objetivos.
 
-Cada dimensión se evalúa de forma independiente, de manera que una
-puntuación más elevada indica una mayor presencia del rasgo
-correspondiente. Estas variables permiten explorar posibles asociaciones
-entre las características de personalidad de los participantes y su
-impacto en el consumo de sustancias.
-
 Por último, las variables de consumo se encuentran codificadas mediante
 siete categorías ordinales (`CL0`–`CL6`), que indican el tiempo
 transcurrido desde el último consumo de cada sustancia, tal como se
-recoge en la Tabla \\ref{tab}. Esta codificación permite distinguir
-entre quienes nunca han consumido una sustancia y quienes lo han hecho
-en diferentes periodos temporales.
+recoge en la Tabla \ref{tab:codificacion_consumo}. Esta codificación
+permite distinguir entre quienes nunca han consumido una sustancia y
+quienes lo han hecho en diferentes periodos temporales.
 
 \begin{table}[ht]
 \centering
@@ -338,15 +330,15 @@ summary(datos[2:13])
 ```
 
 Se observa que las variables sociodemográficas están representadas
-mediante códigos numéricos (positivos y negativos) en lugar de sus
-categorías originales, mientras que las variables psicológicas se
-recogen como puntuaciones transformadas respecto a las escalas de los
-cuestionarios. Esto se debe a que los datos han sido previamente
-codificados y transformados para facilitar su utilización en algoritmos
-de aprendizaje automático. Por tanto, será necesario recuperar las
-categorías originales de las variables sociodemográficas y las
-puntuaciones del modelo *Big Five*, además de aplicar las
-transformaciones necesarias a las restantes variables psicológicas.
+mediante códigos numéricos en lugar de sus categorías originales,
+mientras que las variables psicológicas presentan puntuaciones
+transformadas respecto a las escalas de los cuestionarios. Estas
+codificaciones facilitan su utilización en algoritmos de aprendizaje
+automático, pero dificultan su interpretación.
+
+Por ello, se recuperarán las categorías sociodemográficas y las
+puntuaciones originales del modelo *Big Five*, además de realizar las
+transformaciones necesarias sobre las restantes variables psicológicas.
 
 ###Comprobación de datos faltantes
 
