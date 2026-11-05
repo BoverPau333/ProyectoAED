@@ -124,6 +124,65 @@ package.check <- lapply(packages, FUN = function(x) {
 search()
 ```
 
+<<<<<<< HEAD
+```{r  echo = FALSE}
+url_UCI <- paste0(
+  "https://archive.ics.uci.edu/",
+  "static/public/373/drug+consumption+quantified.zip"
+)
+```
+
+```{r estilo-graficas, include=FALSE}
+tema_aed <- theme_minimal(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold", size = 13),
+    plot.subtitle = element_text(size = 10, color = "grey35"),
+    plot.caption = element_text(size = 8, color = "grey40", hjust = 0),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 9, color = "grey25"),
+    strip.text = element_text(face = "bold", size = 10),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "grey90", linewidth = 0.3),
+    panel.spacing = grid::unit(0.7, "lines"),
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 9),
+    legend.key.height = grid::unit(0.4, "cm"),
+    plot.margin = margin(5, 5, 5, 5)
+  )
+theme_set(tema_aed)
+
+col_familias <- c(
+  Cannabinoids = "#1B9E77", Depressants = "#D95F02",
+  Dissociatives = "#7570B3", Empathogens = "#CC79A7",
+  Opioids = "#0072B2", Psychedelics = "#A6761D",
+  Stimulants = "#666666"
+)
+col_sustancias <- c(cannabis = "#1B9E77", nicotine = "#E69F00",
+                    alcohol = "#0072B2")
+col_paneles <- c(col_familias, col_sustancias[c("nicotine", "alcohol")])
+col_genero <- c(Male = "#0072B2", Female = "#D95F02")
+col_atipicos <- c("Resto" = "grey65", "Atípico" = "#D55E00",
+                 "Declara Semeron" = "#0072B2")
+col_consumo <- c("0" = "#667788", "1" = "#0072B2",
+                 "2-3" = "#E69F00", "4+" = "#B54D00")
+col_grupos <- c("Consumo socialmente extendido" = "#0072B2",
+                "Otras sustancias" = "#D95F02")
+col_correlacion <- colorRampPalette(c("#D55E00", "white", "#0072B2"))(100)
+
+porcentaje_eje <- function(x) paste0(x, "%")
+
+dibujar_correlaciones <- function(matriz) {
+  corrplot::corrplot(matriz, is.corr = TRUE, col = col_correlacion,
+                    method = "color", addCoef.col = "black",
+                    number.cex = 0.7, tl.cex = 0.8,
+                    tl.col = "grey25", tl.srt = 45)
+}
+
+```
+
+=======
+>>>>>>> 3f0f32ad6eddcc5787a32f56081c98d77acdc34e
 ## Obtención de datos
 
 El conjunto de datos utilizado corresponde a *Drug Consumption
@@ -484,7 +543,7 @@ datos_consumo_familias <- datos_consumo %>%
   summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
               else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 
-# Resumen reutilizable para edad, género, etnia o educación.
+Resumen reutilizable para edad, género, etnia o educación.
 resumir_consumo <- function(ds, perfil, categoria) {
   ds %>%
     filter(!is.na(.data[[perfil]])) %>%
@@ -561,64 +620,53 @@ outliers %>% group_by(variable, metodo) %>%
   summarise(n_outliers = sum(atipico), inferior = first(inf),superior = first(sup), .groups = "drop")
 ```
 
-```{r fig_atipicos_cscore, fig.width=8, fig.height=5.5, fig.cap="Valores atípicos en responsabilidad (cscore) según tres métodos.\\label{fig:atipicos-cscore}", warning=FALSE, message=FALSE}
-outliers %>%
+```{r fig_atipicos_cscore, fig.cap="Valores atípicos en responsabilidad (cscore) según tres métodos. Las líneas discontinuas indican los umbrales."}
+puntos <- outliers %>%
   filter(variable == "cscore") %>%
   mutate(grupo = case_when(
     id %in% personas_semeron$id ~ "Declara Semeron",
-    atipico ~ "Atípico",
-    TRUE ~ "Resto"
+    atipico ~ "Atípico", TRUE ~ "Resto"
   )) %>%
-  arrange(grupo == "Declara Semeron") %>%
-  ggplot(aes(x = id, y = valor)) +
-  geom_hline(aes(yintercept = inf), linetype = "dashed") +
-  geom_hline(aes(yintercept = sup), linetype = "dashed") +
-  geom_point(aes(color = grupo), size = 1.5) +
+  arrange(grupo == "Declara Semeron")
+
+limites <- puntos %>% distinct(metodo, inf, sup)
+
+grafico_atipicos <- ggplot(puntos, aes(id, valor)) +
+  geom_hline(data = limites, aes(yintercept = inf), linetype = "dashed") +
+  geom_hline(data = limites, aes(yintercept = sup), linetype = "dashed") +
+  geom_point(aes(color = grupo), size = 1.2) +
   facet_wrap(~ metodo) +
-  scale_color_manual(values = c("Declara Semeron" = "blue",
-                                "Atípico" = "red", "Resto" = "grey60")) +
-  labs(x = "Participante", y = "Puntuación", color = "Grupo") +
-  theme_minimal()
+  scale_color_manual(values = col_atipicos) +
+  labs(x = "Participante", y = "Puntuación")
+
+grafico_atipicos
 ```
+
 
 En esta gráfica, la regla del boxplot establece un intervalo más
 estrecho y, por tanto, **identifica más valores atípicos** que Hampel y
 tres sigma. Estos dos últimos métodos presentan límites similares y
 señalan únicamente las puntuaciones más extremas.
 
-```{r fig_densidad_cscore, fig.width=8, fig.height=5.5, fig.cap="Distribución de cscore y límites de detección de valores atípicos.\\label{fig:densidad-cscore}", warning=FALSE, message=FALSE}
-puntos <- outliers %>%
-  filter(variable == "cscore") %>%
-  mutate(grupo = case_when(
-    id %in% personas_semeron$id ~ "Declara Semeron",
-    atipico ~ "Atípico",
-    TRUE ~ "Resto"
-  )) %>%
-  arrange(grupo == "Declara Semeron")
-
+```{r fig_densidad_cscore, fig.cap="Distribución de cscore y umbrales de detección. Los puntos se desplazan ligeramente en horizontal para reducir el solapamiento."}
 valores <- puntos %>% distinct(id, valor)
 d <- density(valores$valor, na.rm = TRUE)
 curva <- tibble(valor = d$x, densidad = d$y)
+puntos <- puntos %>% mutate(densidad = approx(d$x, d$y, xout = valor)$y)
 
-puntos <- puntos %>%
-  mutate(densidad = approx(d$x, d$y, xout = valor)$y)
-
-ggplot(puntos, aes(x = densidad, y = valor)) +
+grafico_densidad <- ggplot(puntos, aes(densidad, valor)) +
   geom_ribbon(data = curva, aes(y = valor, xmin = 0, xmax = densidad),
-              inherit.aes = FALSE, orientation = "y", fill = "grey90") +
-  geom_path(data = curva, color = "grey50") +
-  geom_hline(data = distinct(puntos, metodo, inf, sup),
-             aes(yintercept = inf), linetype = "dashed") +
-  geom_hline(data = distinct(puntos, metodo, inf, sup),
-             aes(yintercept = sup), linetype = "dashed") +
-  geom_point(aes(color = grupo), size = 2,
-           position = position_jitter(width = 0.001, height = 0, seed = 123)) +
+              inherit.aes = FALSE, orientation = "y", fill = "grey93") +
+  geom_path(data = curva, color = "grey60") +
+  geom_hline(data = limites, aes(yintercept = inf), linetype = "dashed") +
+  geom_hline(data = limites, aes(yintercept = sup), linetype = "dashed") +
+  geom_point(aes(color = grupo), size = 1.3,
+             position = position_jitter(width = 0.001, height = 0, seed = 123)) +
   facet_wrap(~ metodo) +
-  scale_color_manual(values = c("Declara Semeron" = "blue",
-                                "Atípico" = "red", "Resto" = "grey60")) +
-  labs(x = "Densidad estimada", y = "Puntuación de responsabilidad (cscore)",
-       color = "Grupo") +
-  theme_minimal()
+  scale_color_manual(values = col_atipicos) +
+  labs(x = "Densidad estimada", y = "Puntuación de responsabilidad")
+
+grafico_densidad
 ```
 
 Los métodos de tres sigma, Hampel y boxplot identificaron observaciones
@@ -661,47 +709,31 @@ datos_cor <- personalidad %>%
 correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
 ```
 
-```{r fig_corr_sustancias, fig.width=10.5, fig.height=7.5, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y sustancias.\\label{fig:correlaciones-sustancias}", warning=FALSE, message=FALSE}
+```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías de recencia del consumo."}
 rasgos <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
 sustancias <- setdiff(colnames(correlaciones), rasgos)
+matriz_sustancias <- correlaciones[rasgos, sustancias, drop = FALSE]
 
-matriz_visual <- correlaciones[rasgos, sustancias, drop = FALSE]
-
-colores <- colorRampPalette(c("red", "white", "blue"))
-
-corrplot::corrplot(matriz_visual, is.corr = TRUE, col = colores(100),
-                   method = "color", addCoef.col = "black",
-                   number.cex = 0.8, tl.col = "black", tl.srt = 45)
-
+dibujar_correlaciones(matriz_sustancias)
 ```
 
-```{r fig_corr_familias, fig.width=8, fig.height=6, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y consumo por familias.\\label{fig:correlaciones-familias}", warning=FALSE, message=FALSE}
-rasgos <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
-
-# Una columna por familia: 0 = sin consumo reciente, 1 = con consumo reciente.
+```{r fig_corr_familias, fig.width=7, fig.height=4.5, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y consumo reciente de alguna sustancia de cada familia."}
 consumos_familias <- datos_consumo_familias %>%
   select(id, family, reciente) %>%
   mutate(reciente = as.integer(reciente)) %>%
   pivot_wider(names_from = family, values_from = reciente)
 
-personalidad <- datos_families %>%
-  select(id, all_of(rasgos)) %>%
-  distinct()
+personalidad <- datos_families %>% select(id, all_of(rasgos)) %>% distinct()
 
 datos_cor_familias <- personalidad %>%
-  left_join(consumos_familias, by = "id") %>%
-  select(-id)
+  left_join(consumos_familias, by = "id") %>% select(-id)
 
 correlaciones_familias <- cor(datos_cor_familias, method = "spearman",
                               use = "complete.obs")
 familias <- setdiff(colnames(correlaciones_familias), rasgos)
-matriz_visual <- correlaciones_familias[rasgos, familias, drop = FALSE]
+matriz_familias <- correlaciones_familias[rasgos, familias, drop = FALSE]
 
-colores <- colorRampPalette(c("red", "white", "blue"))
-
-corrplot::corrplot(matriz_visual, is.corr = TRUE, col = colores(100),
-                  method = "color", addCoef.col = "black",
-                  number.cex = 0.8, tl.col = "black", tl.srt = 45)
+dibujar_correlaciones(matriz_familias)
 ```
 
 ## Descripción de la muestra y preparación de comparaciones
@@ -736,82 +768,57 @@ consumo_etnia <- resumir_consumo(datos_consumo, "ethnicity", "substance")
 
 ### Edad
 
-```{r fig_consumo_edad, fig.width=12, fig.height=10, fig.cap="Proporción de consumo reciente por grupo de edad y familia de sustancias.\\label{fig:consumo-edad}", warning=FALSE, message=FALSE}
+```{r fig_consumo_edad, fig.width=9, fig.height=7.5, fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
 edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
-paneles <- c("Cannabinoids", "Depressants", "Dissociatives", "Empathogens",
-             "Opioids", "Psychedelics", "Stimulants", "nicotine", "alcohol")
+paneles <- names(col_paneles)
+etiquetas_familias <- c(
+  Cannabinoids = "Cannabinoides", Depressants = "Depresores",
+  Dissociatives = "Disociativos", Empathogens = "Empatógenos",
+  Opioids = "Opioides", Psychedelics = "Psicodélicos",
+  Stimulants = "Estimulantes", nicotine = "nicotine", alcohol = "alcohol"
+)
 
-etiquetas <- c(Cannabinoids = "Cannabinoides", Depressants = "Depresores",
-  Dissociatives = "Disociativos", Empathogens = "Empatógenos", Opioids = "Opioides",
-  Psychedelics = "Psicodélicos", Stimulants = "Estimulantes",
-  nicotine = "Nicotina", alcohol = "Alcohol")
+consumo_adicional <- resumir_consumo(
+  datos_consumo %>% filter(substance %in% c("nicotine", "alcohol")),
+  "age", "substance"
+) %>% rename(panel = substance)
 
-colores <- setNames(c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#168AAD",
-                     "#A6761D", "#666666", "#E69F00", "#0072B2"), paneles)
-
-# Nicotina y alcohol se calculan desde los datos por sustancia.
-consumo_adicional <- datos_consumo %>%
-  filter(substance %in% c("nicotine", "alcohol")) %>%
-  group_by(age, substance) %>%
-  summarise(n = sum(!is.na(reciente)), consumidores = sum(reciente, na.rm = TRUE),
-            .groups = "drop") %>%
-  mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_)) %>%
-  rename(panel = substance)
-
-# Combinamos familias y sustancias individuales únicamente para representarlas.
 lineas <- bind_rows(
-  consumo_edad_familias %>% rename(panel = family),
-  consumo_adicional
+  consumo_edad_familias %>% rename(panel = family), consumo_adicional
 ) %>%
   filter(panel %in% paneles) %>%
-  mutate(panel = factor(panel, levels = paneles),
-         x = match(as.character(age), edades))
+  mutate(x = match(as.character(age), edades))
 
 titulos <- lineas %>%
   filter(x %in% c(1, 6)) %>%
   select(panel, x, porcentaje) %>%
   pivot_wider(names_from = x, values_from = porcentaje, names_prefix = "edad_") %>%
   mutate(diferencia = edad_6 - edad_1,
-         titulo = paste0(etiquetas[as.character(panel)], "\n",
-                         sprintf("65+ frente a 18-24: %+.0f p.p.", diferencia))) %>% arrange(diferencia)
+         titulo = paste0(etiquetas_familias[as.character(panel)], "\n",
+                         sprintf("%+.0f p.p.", diferencia))) %>%
+  arrange(diferencia)
 
-lineas <- lineas %>%
-  mutate(panel = factor(panel, levels = as.character(titulos$panel)))
-
-rotulos <- setNames(titulos$titulo, as.character(titulos$panel))
+lineas <- lineas %>% mutate(panel = factor(panel, levels = titulos$panel))
+rotulos <- setNames(titulos$titulo, titulos$panel)
 fondo <- lineas %>% rename(serie = panel)
 
-grafico_edad_familias <- ggplot(lineas, aes(x = x, y = porcentaje, group = panel)) +
-  geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.6) +
-  geom_area(aes(fill = panel), alpha = 0.10) +
-  geom_line(aes(color = panel), linewidth = 1.2) +
-  geom_point(aes(color = panel), size = 2.8) +
+grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
+  geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.5) +
+  geom_area(aes(fill = panel), alpha = 0.1) +
+  geom_line(aes(color = panel), linewidth = 1) +
+  geom_point(aes(color = panel), size = 2) +
   geom_text(aes(label = sprintf("%.0f%%", porcentaje), color = panel),
-            vjust = -1, size = 3.2, fontface = "bold") +
+            vjust = -1, size = 2.7, fontface = "bold") +
   facet_wrap(~ panel, ncol = 3, labeller = as_labeller(rotulos)) +
-  scale_color_manual(values = colores) +
-  scale_fill_manual(values = colores) +
+  scale_color_manual(values = col_paneles) +
+  scale_fill_manual(values = col_paneles) +
   scale_x_continuous(breaks = 1:6, labels = edades,
                      expand = expansion(mult = c(0.08, 0.08))) +
-  scale_y_continuous(limits = c(0, 112), breaks = seq(0, 100, 25),
-                     labels = function(x) paste0(x, "%")) +
-  labs(title = "Consumo reciente según el grupo de edad",
-       subtitle = "Siete familias de sustancias y dos sustancias individuales: nicotina y alcohol",
-       x = "Grupo de edad", y = "Consumo en los últimos 12 meses (%)",
-       caption = paste(
-         "Familias: excluidos alcohol, cafeína, nicotina, chocolate, Semeron y legal highs.",
-         "Nicotina y alcohol se muestran por separado. p.p.: puntos porcentuales.",
-         "Comparación entre grupos de edad; no es seguimiento individual.", sep = "\n")) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "none", panel.grid.minor = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.major.y = element_line(color = "grey92"),
-        strip.text = element_text(face = "bold", size = 11, hjust = 0),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        panel.spacing = grid::unit(1.4, "lines"),
-        plot.title = element_text(face = "bold", size = 18),
-        plot.subtitle = element_text(color = "grey40"),
-        plot.caption = element_text(hjust = 0, color = "grey40"))
+  scale_y_continuous(limits = c(0, 112), breaks = c(0, 50, 100),
+                     labels = porcentaje_eje) +
+  labs(x = "Grupo de edad", y = "Consumo reciente (%)") +
+  theme(legend.position = "none", panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
 grafico_edad_familias
 ```
@@ -856,24 +863,18 @@ generalizar directamente las cifras a toda la población.
 
 ### Género
 
-```{r fig_consumo_genero, fig.width=8.5, fig.height=7, fig.cap="Diferencias en consumo reciente por género y sustancia.\\label{fig:consumo-genero}", warning=FALSE, message=FALSE}
+```{r fig_consumo_genero, fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
 grafico_genero <- consumo_genero %>%
   filter(!is.na(porcentaje)) %>%
-  ggplot(aes(x = porcentaje, y = reorder(substance, porcentaje, FUN = mean))) +
-  geom_line(aes(group = substance), color = "grey75", linewidth = 1.2,
-            orientation = "y") +
-  geom_point(aes(color = gender), size = 3.5) +
-  scale_color_manual(values = c("Male" = "#168AAD", "Female" = "#D95F02"),
-                     labels = c("Male" = "Hombres", "Female" = "Mujeres")) +
-  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 20),
-                     labels = function(x) paste0(x, "%")) +
-  labs(title = "Diferencias de consumo reciente por género",
-       subtitle = "La separación entre puntos indica la diferencia en puntos porcentuales",
-       x = "Consumo en los últimos 12 meses", y = NULL, color = NULL) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "top", panel.grid.minor = element_blank(),
-        panel.grid.major.y = element_line(color = "grey90", linetype = "dotted"),
-        plot.title = element_text(face = "bold", size = 17))
+  ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) +
+  geom_line(aes(group = substance), color = "grey75",
+            linewidth = 1, orientation = "y") +
+  geom_point(aes(color = gender), size = 2.8) +
+  scale_color_manual(values = col_genero) +
+  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 25),
+                     labels = porcentaje_eje) +
+  labs(x = "Consumo en los últimos 12 meses (%)", y = NULL) +
+  theme(panel.grid.major.y = element_line(linetype = "dotted"))
 
 grafico_genero
 ```
@@ -901,56 +902,44 @@ atribuirlas exclusivamente al género.
 
 ### Etnia
 
-```{r fig_consumo_etnia, fig.width=11, fig.height=5.5, fig.cap="Prevalencia de consumo por etnia: porcentajes e intervalos de Wilson al 95 por ciento.\\label{fig:consumo-etnia}", warning=FALSE, message=FALSE}
-
-# Mantenemos el mismo orden de etnias en los tres paneles.
+```{r fig_consumo_etnia, fig.cap="Consumo reciente por etnia. Puntos: porcentajes; líneas: intervalos de Wilson al 95%; etiquetas: consumidores/respuestas disponibles. Se omite Black-Asian por su reducido tamaño. Los intervalos no corrigen sesgos de selección."}
 orden_etnias <- perfil_personas %>%
-  filter(!is.na(ethnicity)) %>%
-  count(ethnicity, sort = TRUE) %>%
-  pull(ethnicity) %>% as.character()
+  filter(!is.na(ethnicity), ethnicity != "Black-Asian") %>%
+  count(ethnicity, sort = TRUE) %>% pull(ethnicity) %>% as.character()
 
-# Intervalos de confianza de Wilson al 95 %.
 etnia_intervalos <- consumo_etnia %>%
-  filter(substance %in% c("alcohol", "nicotine", "cannabis"), n > 0, ethnicity != "Black-Asian") %>%
+  filter(substance %in% c("alcohol", "nicotine", "cannabis"),
+         n > 0, ethnicity %in% orden_etnias) %>%
   mutate(p = consumidores / n,
          centro = (p + 1.96^2 / (2 * n)) / (1 + 1.96^2 / n),
          margen = 1.96 * sqrt(p * (1 - p) / n + 1.96^2 / (4 * n^2)) /
            (1 + 1.96^2 / n),
-         inferior = 100 * (centro - margen),
-         superior = 100 * (centro + margen),
+         inferior = pmax(0, 100 * (centro - margen)),
+         superior = pmin(100, 100 * (centro + margen)),
          ethnicity = factor(ethnicity, levels = rev(orden_etnias)),
          substance = factor(substance, levels = c("alcohol", "nicotine", "cannabis")))
 
-grafico_etnia_sustancias <- ggplot(etnia_intervalos,
-                                   aes(x = porcentaje, y = ethnicity, color = substance)) +
-  geom_segment(aes(x = inferior, xend = superior, yend = ethnicity), linewidth = 1) +
-  geom_point(size = 3) +
-  geom_text(aes(label = paste0(consumidores, "/", n)), vjust = -1, size = 3,
-            color = "grey30") +
+grafico_etnia_sustancias <- ggplot(
+  etnia_intervalos, aes(porcentaje, ethnicity, color = substance)
+) +
+  geom_segment(aes(x = inferior, xend = superior, yend = ethnicity), linewidth = 0.8) +
+  geom_point(size = 2.5) +
+  geom_text(aes(label = paste0(consumidores, "/", n)),
+            vjust = -1, size = 2.7, color = "grey30") +
   facet_wrap(~ substance, nrow = 1) +
-  scale_color_manual(values = c(alcohol = "#0072B2", nicotine = "#E69F00",
-                                cannabis = "#1B9E77")) +
-  scale_x_continuous(breaks = seq(0, 100, 25), limits = c(0, 100),
-                     labels = function(x) paste0(x, "%"),
-                     expand = expansion(mult = 0.08)) +
+  scale_color_manual(values = col_sustancias) +
+  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 25),
+                     labels = porcentaje_eje, expand = expansion(mult = 0.1)) +
   scale_y_discrete(expand = expansion(add = 0.8)) +
-  labs(title = "Consumo reciente por etnia y sustancia",
-       subtitle = "Puntos: porcentaje observado. Líneas: intervalo de Wilson del 95 %.",
-       x = "Consumo en los últimos 12 meses", y = NULL,
-       caption = "Etiquetas: consumidores / respuestas disponibles. Los intervalos no corrigen sesgos de selección.") +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "none", panel.grid.minor = element_blank(),
-        panel.grid.major.y = element_line(color = "grey90", linetype = "dotted"),
-        strip.text = element_text(face = "bold", size = 12),
-        plot.title = element_text(face = "bold"),
-        plot.caption = element_text(hjust = 0))
+  labs(x = "Consumo reciente (%)", y = NULL) +
+  theme(legend.position = "none",
+        panel.grid.major.y = element_line(linetype = "dotted"))
 
 grafico_etnia_sustancias
-
 ```
 
-```{r fig_etnia_grupos, fig.width=9, fig.height=5.5, fig.cap="Consumo reciente por etnia y grupo de sustancias.\\label{fig:grupos-etnia}", warning=FALSE, message=FALSE}
 
+```{r fig_etnia_grupos, fig.cap="Consumo reciente por etnia y grupo de sustancias. Etiquetas: consumidores/respuestas disponibles. El grupo socialmente extendido incluye alcohol, cafeína y nicotina; se excluyen chocolate y Semeron."}
 consumo_grupos <- datos_consumo %>%
   filter(!substance %in% c("choc", "semer")) %>%
   mutate(grupo = if_else(substance %in% c("alcohol", "caff", "nicotine"),
@@ -960,25 +949,25 @@ consumo_grupos <- datos_consumo %>%
             else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 
 resumen_etnia <- consumo_grupos %>%
-  filter(!is.na(ethnicity)) %>%
+  filter(ethnicity %in% orden_etnias) %>%
   group_by(ethnicity, grupo) %>%
   summarise(n = sum(!is.na(consume)), consumidores = sum(consume, na.rm = TRUE),
             .groups = "drop") %>%
-  mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_))
+  mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_),
+         ethnicity = factor(ethnicity, levels = orden_etnias))
 
-ggplot(resumen_etnia, aes(x = ethnicity, y = porcentaje, fill = grupo)) +
-  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+grafico_etnia_grupos <- ggplot(resumen_etnia, aes(ethnicity, porcentaje, fill = grupo)) +
+  geom_col(position = position_dodge(0.8), width = 0.7) +
   geom_text(aes(label = paste0(consumidores, "/", n)),
-            position = position_dodge(width = 0.8), vjust = -0.4, size = 3) +
-  scale_fill_manual(values = c("#168AAD", "#D95F02")) +
-  scale_y_continuous(limits = c(0, 110), breaks = seq(0, 100, 25),
-                     labels = function(x) paste0(x, "%")) +
-  labs(title = "Consumo reciente por etnia y grupo de sustancias",
-       subtitle = "Etiquetas: consumidores / participantes con respuesta disponible",
-       x = "Etnia", y = "Consumo en los últimos 12 meses", fill = NULL) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(angle = 35, hjust = 1))
+            position = position_dodge(0.8), vjust = -0.4, size = 2.7) +
+  scale_fill_manual(values = col_grupos) +
+  scale_y_continuous(limits = c(0, 112), breaks = seq(0, 100, 25),
+                     labels = porcentaje_eje) +
+  labs(x = NULL, y = "Consumo reciente (%)") +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1),
+        panel.grid.major.x = element_blank())
+
+grafico_etnia_grupos
 ```
 
 ## Consumo reciente según nivel educativo
@@ -991,67 +980,43 @@ La categoría *Some college* corresponde a estudios universitarios sin
 titulación; el dataset no permite distinguir entre estudiantes actuales
 y personas que interrumpieron los estudios.
 
-```{r fig_consumo_educacion, fig.width=9, fig.height=5.8, fig.cap="Consumo reciente por familia según nivel educativo.\\label{fig:consumo-educacion}", warning=FALSE, message=FALSE}
+```{r fig_consumo_educacion, fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia."}
 grafico_educacion <- ggplot(
-  consumo_educacion,
-  aes(x = education, y = porcentaje,
-      color = family, group = family)
+  consumo_educacion, aes(education, porcentaje, color = family, group = family)
 ) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3) +
-
-  scale_y_continuous(
-    limits = c(0, 100),
-    breaks = seq(0, 100, 20),
-    labels = function(x) paste0(x, "%")
-  ) +
-  labs(
-    title = "Consumo reciente según el nivel educativo",
-    subtitle = "Porcentaje de participantes que consumieron alguna sustancia del grupo",
-    x = "Nivel educativo",
-    y = "Consumo en los últimos 12 meses"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    legend.position = "bottom",
-    axis.text.x = element_text(angle = 40, hjust = 1),
-    plot.title = element_text(face = "bold")
-  )
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  scale_color_manual(values = col_familias) +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 25),
+                     labels = porcentaje_eje) +
+  labs(x = NULL, y = "Consumo reciente (%)") +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 40, hjust = 1),
+        panel.grid.major.x = element_blank())
 
 grafico_educacion
 ```
 
-```{r fig_mapa_educacion, fig.width=11, fig.height=6.2, fig.cap="Mapa de calor de consumo reciente por sustancia y nivel educativo.\\label{fig:mapa-educacion}", warning=FALSE, message=FALSE}
+```{r fig_mapa_educacion, fig.cap="Porcentaje de consumo reciente por sustancia y nivel educativo, agrupado por familias."}
 consumo_sustancias_educacion <- datos_consumo %>%
   filter(!substance %in% excluir_familias) %>%
   group_by(education, family, substance) %>%
-  summarise(
-    porcentaje = 100 * mean(reciente),
-    .groups = "drop"
-  )
+  summarise(porcentaje = 100 * mean(reciente, na.rm = TRUE), .groups = "drop")
 
-ggplot(consumo_sustancias_educacion,
-       aes(x = education, y = substance, fill = porcentaje)) +
+grafico_mapa_educacion <- ggplot(
+  consumo_sustancias_educacion, aes(education, substance, fill = porcentaje)
+) +
   geom_tile(color = "white") +
   facet_grid(family ~ ., scales = "free_y", space = "free_y") +
-  scale_fill_gradient(
-    low = "#EAF3F8",
-    high = "#146C94",
-    limits = c(0, 100)
-  ) +
-  labs(
-    title = "Consumo reciente por sustancia y nivel educativo",
-    subtitle = "Porcentaje de participantes que consumieron cada sustancia",
-    x = "Nivel educativo",
-    y = NULL,
-    fill = "Consumo (%)"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 40, hjust = 1),
-    panel.grid = element_blank(),
-    plot.title = element_text(face = "bold")
-  )
+  scale_fill_gradient(low = "#EFF6FA", high = "#0072B2", limits = c(0, 100),
+                      name = "Consumo (%)") +
+  labs(x = NULL, y = NULL) +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
+        panel.grid = element_blank(), legend.position = "bottom",
+        legend.title = element_text(size = 9))
+
+grafico_mapa_educacion
 ```
 
 ## Impulsividad, búsqueda de sensaciones y policonsumo
@@ -1115,43 +1080,27 @@ table(policonsumo$grupo)
 round(prop.table(table(policonsumo$grupo)) * 100, 2)
 ```
 
-```{r fig_psicometria_policonsumo, fig.width=8, fig.height=5.3, fig.cap="Puntuaciones de impulsividad y búsqueda de sensaciones por grupo de policonsumo.\\label{fig:policonsumo-psicometria}", warning=FALSE, message=FALSE}
-policonsumo %>%
-  group_by(grupo) %>%
-  summarise(
-    n = n(),
-    mediana_impulsividad = median(impulsive),
-    mediana_ss = median(ss)
-  )
-
+```{r fig_psicometria_policonsumo, fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
 policonsumo_grafico <- policonsumo %>%
-  pivot_longer(
-    cols = c(impulsive, ss),
-    names_to = "rasgo",
-    values_to = "valor"
-  )
+  pivot_longer(c(impulsive, ss), names_to = "rasgo", values_to = "valor")
 
-rho_imp <- round(cor(policonsumo$n_sustancias, policonsumo$impulsive, method = "spearman"), 3)
-rho_ss <- round(cor(policonsumo$n_sustancias, policonsumo$ss,  method = "spearman"), 3)
-etiquetas <- c(
-  impulsive = paste0("impulsive\nSpearman: ", rho_imp),
-  ss = paste0("ss\nSpearman: ", rho_ss)
+rho_imp <- cor(policonsumo$n_sustancias, policonsumo$impulsive,
+               method = "spearman", use = "complete.obs")
+rho_ss <- cor(policonsumo$n_sustancias, policonsumo$ss,
+              method = "spearman", use = "complete.obs")
+etiquetas_rasgos <- c(
+  impulsive = sprintf("impulsive\nSpearman: %.3f", rho_imp),
+  ss = sprintf("ss\nSpearman: %.3f", rho_ss)
 )
 
-ggplot(policonsumo_grafico, aes(x = grupo, y = valor)) +
-  geom_boxplot() +
-  facet_wrap(
-    ~ rasgo,
-    labeller = as_labeller(etiquetas),
-    scales = "free_y"
-  ) +
-  labs(
-    title = "Rasgos psicológicos según el número de sustancias consumidas",
-    x = "Grupo de consumo",
-    y = "Puntuación"
-  )
+grafico_psicometria <- ggplot(policonsumo_grafico, aes(grupo, valor, fill = grupo)) +
+  geom_boxplot(width = 0.6, alpha = 0.8, outlier.size = 1) +
+  facet_wrap(~ rasgo, labeller = as_labeller(etiquetas_rasgos)) +
+  scale_fill_manual(values = col_consumo) +
+  labs(x = "Número de sustancias consumidas", y = "Puntuación reescalada") +
+  theme(legend.position = "none", panel.grid.major.x = element_blank())
 
-summary(datos_families)
+grafico_psicometria
 ```
 
 Podemos observar una **asociación positiva entre ambos rasgos
@@ -1200,17 +1149,10 @@ búsqueda de sensaciones.
 
 ### Policonsumo por etnia
 
-```{r fig_policonsumo_etnia, fig.width=10, fig.height=5.7, fig.cap="Distribución porcentual del policonsumo según etnia.\\label{fig:policonsumo-etnia}", warning=FALSE, message=FALSE}
-# Añadimos la etnia a la clasificación de consumo de cada persona.
+```{r fig_policonsumo_etnia, fig.cap="Distribución del policonsumo por etnia durante los últimos doce meses. Se excluyen alcohol, cafeína, chocolate y Semeron. Las etiquetas del eje indican el tamaño de cada grupo."}
 policonsumo_etnia <- policonsumo %>%
-  mutate(grupo = case_when(
-    n_sustancias == 0 ~ "None",
-    n_sustancias == 1 ~ "One",
-    n_sustancias == 2 | n_sustancias == 3 ~ "Two-Three",
-    n_sustancias >= 4 ~ "Four or more"
-  ), grupo = factor(grupo, levels = c("None", "One", "Two-Three", "Four or more"))) %>%
   left_join(perfil_personas %>% select(id, ethnicity), by = "id") %>%
-  filter(!is.na(ethnicity), ethnicity != "Black-Asian", !is.na(grupo)) %>%
+  filter(ethnicity %in% orden_etnias, !is.na(grupo)) %>%
   count(ethnicity, grupo, .drop = FALSE) %>%
   group_by(ethnicity) %>%
   mutate(total = sum(n), porcentaje = 100 * n / total) %>%
@@ -1218,32 +1160,25 @@ policonsumo_etnia <- policonsumo %>%
   filter(total > 0) %>%
   mutate(ethnicity = factor(ethnicity, levels = rev(orden_etnias)))
 
-# Indicamos cuántas personas tienen una clasificación disponible en cada etnia.
 rotulos_etnia <- policonsumo_etnia %>%
   distinct(ethnicity, total) %>%
   mutate(rotulo = paste0(ethnicity, " (n = ", total, ")"))
 
-grafico_etnia_policonsumo <- ggplot(policonsumo_etnia,
-                                    aes(x = porcentaje, y = ethnicity, fill = grupo)) +
-  geom_col(width = 0.7, position = position_stack(reverse = TRUE)) +
+grafico_etnia_policonsumo <- ggplot(
+  policonsumo_etnia, aes(porcentaje, ethnicity, fill = grupo)
+) +
+  geom_col(width = 0.65, position = position_stack(reverse = TRUE)) +
   geom_text(aes(label = if_else(porcentaje >= 7, sprintf("%.0f%%", porcentaje), "")),
             position = position_stack(vjust = 0.5, reverse = TRUE),
-            color = "white", fontface = "bold", size = 3.5) +
+            color = "white", fontface = "bold", size = 3) +
   scale_y_discrete(labels = setNames(rotulos_etnia$rotulo, rotulos_etnia$ethnicity)) +
-  scale_fill_manual(values = c("None" = "#667788", "One" = "#168AAD",
-                               "Two-Three" = "#E69F00", "Four or more" = "#B54D00"),
-                    drop = FALSE)  +
-  scale_x_continuous(breaks = seq(0, 100, 25),
-                     labels = function(x) paste0(x, "%"),
+  scale_fill_manual(values = col_consumo, drop = FALSE,
+                    name = "Número de sustancias") +
+  scale_x_continuous(breaks = seq(0, 100, 25), labels = porcentaje_eje,
                      expand = expansion(mult = c(0, 0.01))) +
-  labs(title = "Distribución del policonsumo por etnia",
-       x = "Porcentaje de participantes", y = NULL, fill = NULL,
-       caption = "Consumo en los últimos 12 meses. Excluidos alcohol, cafeína, chocolate y Semeron.") +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "top", panel.grid.minor = element_blank(),
-        panel.grid.major.y = element_blank(),
-        plot.title = element_text(face = "bold"),
-        plot.caption = element_text(hjust = 0))
+  labs(x = "Porcentaje de participantes", y = NULL) +
+  theme(panel.grid.major.y = element_blank(),
+        legend.title = element_text(size = 9))
 
 grafico_etnia_policonsumo
 ```
