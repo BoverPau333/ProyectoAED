@@ -543,7 +543,7 @@ datos_consumo_familias <- datos_consumo %>%
   summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
               else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 
-Resumen reutilizable para edad, género, etnia o educación.
+# Resumen reutilizable para edad, género, etnia o educación.
 resumir_consumo <- function(ds, perfil, categoria) {
   ds %>%
     filter(!is.na(.data[[perfil]])) %>%
