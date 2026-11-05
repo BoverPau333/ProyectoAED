@@ -537,13 +537,15 @@ datos_families <- datos %>%
   left_join(uci_classification, by = "substance")
 
 head(datos_families)
+```
 
+```{r}
 # Consumo reciente por sustancia: conservamos esta tabla para otros análisis.
 datos_consumo <- datos_families %>%
   filter(substance != "semer") %>%
   distinct(id, substance, .keep_all = TRUE) %>%
   mutate(reciente = if_else(is.na(consumption), NA,
-         as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
+                            as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
 
 # Mismas exclusiones que en el análisis original por nivel educativo.
 excluir_familias <- c("alcohol", "caff", "nicotine", "choc", "semer", "legalh")
@@ -553,7 +555,7 @@ datos_consumo_familias <- datos_consumo %>%
   filter(!substance %in% excluir_familias, !is.na(family)) %>%
   group_by(id, age, gender, education, country, ethnicity, family) %>%
   summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
-              else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
+            else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 
 #Resumen reutilizable para edad, género, etnia o educación.
 resumir_consumo <- function(ds, perfil, categoria) {
@@ -738,7 +740,6 @@ edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
 
 paneles <- names(col_paneles)
 ```
-
 
 ```{r fig_consumo_edad, fig.width=9, fig.height=7.5, fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
 
