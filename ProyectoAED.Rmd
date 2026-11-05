@@ -340,36 +340,29 @@ Por ello, se recuperarán las categorías sociodemográficas y las
 puntuaciones originales del modelo *Big Five*, además de realizar las
 transformaciones necesarias sobre las restantes variables psicológicas.
 
-### Aunsencia de valores
+### Integridad del conjunto de datos
 
-Antes de aplicar las transformaciones, comprobamos la integridad del conjunto de datos, identificando posibles valores ausentes y registros duplicados que pudieran afectar a los resultados del análisis.
+Antes de aplicar las transformaciones, revisamos la estructura y
+comprobamos la integridad del conjunto de datos, identificando posibles
+valores ausentes y registros duplicados que pudieran afectar a los
+resultados del análisis.
 
-```{r comprobar_integridad, include=TRUE}
-# Valores ausentes
-sum(colSums(is.na(datos)))
-
-# Identificadores duplicados
-sum(duplicated(datos$id))
-```
-
-```{r}
+```{r comprobar_integridad, include = TRUE}
 colSums(is.na(datos))
+sum(duplicated(datos$id)) 
 ```
 
-## Preprocesamiento y tratamiento de variables
+Al no presentar ninguna de estas anomalías, no es necesario realizar
+operaciones de imputación ni eliminación de registros. No obstante, en
+los nombres de las variables mostrados durante la comprobación se
+observa una errata en la denominación de la impulsividad, registrada
+como `impuslive`.
 
-Podemos observar que, entre las distintas variables que caracterizan
-cada uno de los registros recogidos en el dataset, la variable
-`impuslive` refiere a la impulsividad. No obstante, el nombre cuenta con
-un fallo ortografico que la hace no ser lo suficientemente
-representativa, dando lugar a problemas de interpretación.
-
-Por ello, corregimos a `impulsive` mediante la función `rename` de la
-biblioteca `dplyr`.
+Por tanto, se corrige a `impulsive` para facilitar su identificación y
+posterior tratamiento.
 
 ```{r corregir_impulsive, results="hide", warning=FALSE, message=FALSE}
 datos <- rename(datos, impulsive = impuslive)
-head(datos["impulsive"],3)
 ```
 
 ### Variables sociodemográficas
