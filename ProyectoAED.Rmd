@@ -124,7 +124,6 @@ package.check <- lapply(packages, FUN = function(x) {
 search()
 ```
 
-<<<<<<< HEAD
 ```{r  echo = FALSE}
 url_UCI <- paste0(
   "https://archive.ics.uci.edu/",
@@ -181,8 +180,6 @@ dibujar_correlaciones <- function(matriz) {
 
 ```
 
-=======
->>>>>>> 3f0f32ad6eddcc5787a32f56081c98d77acdc34e
 ## Obtención de datos
 
 El conjunto de datos utilizado corresponde a *Drug Consumption
