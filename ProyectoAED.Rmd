@@ -624,33 +624,6 @@ outliers %>% group_by(variable, metodo) %>%
   summarise(n_outliers = sum(atipico), inferior = first(inf),superior = first(sup), .groups = "drop")
 ```
 
-```{r fig_atipicos_cscore, fig.cap="Valores atípicos en responsabilidad (cscore) según tres métodos. Las líneas discontinuas indican los umbrales."}
-puntos <- outliers %>%
-  filter(variable == "cscore") %>%
-  mutate(grupo = case_when(
-    id %in% personas_semeron$id ~ "Declara Semeron",
-    atipico ~ "Atípico", TRUE ~ "Resto"
-  )) %>%
-  arrange(grupo == "Declara Semeron")
-
-limites <- puntos %>% distinct(metodo, inf, sup)
-
-grafico_atipicos <- ggplot(puntos, aes(id, valor)) +
-  geom_hline(data = limites, aes(yintercept = inf), linetype = "dashed") +
-  geom_hline(data = limites, aes(yintercept = sup), linetype = "dashed") +
-  geom_point(aes(color = grupo), size = 1.2) +
-  facet_wrap(~ metodo) +
-  scale_color_manual(values = col_atipicos) +
-  labs(x = "Participante", y = "Puntuación")
-
-grafico_atipicos
-```
-
-En esta gráfica, la regla del boxplot establece un intervalo más
-estrecho y, por tanto, **identifica más valores atípicos** que Hampel y
-tres sigma. Estos dos últimos métodos presentan límites similares y
-señalan únicamente las puntuaciones más extremas.
-
 ```{r fig_densidad_cscore, fig.cap="Distribución de cscore y umbrales de detección. Los puntos se desplazan ligeramente en horizontal para reducir el solapamiento."}
 valores <- puntos %>% distinct(id, valor)
 d <- density(valores$valor, na.rm = TRUE)
