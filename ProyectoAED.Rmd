@@ -77,6 +77,8 @@ editor_options:
 header-includes:
   - \providecommand{\pandocbounded}[1]{#1}
   - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
+  - \usepackage{etoolbox}
+  - \AtBeginEnvironment{verbatim}{\scriptsize}
 ---
 
 # Introducción
@@ -100,10 +102,10 @@ knitr::opts_chunk$set(
   echo = TRUE, message = FALSE, warning = FALSE,
   fig.width = 7, fig.height = 4,
   out.width = "\\linewidth", fig.align = "center",
-  comment = NA
+  size = "scriptsize", comment = NA
 )
 
-options(width = 80)
+options(width = 120)
 ```
 
 ## Entorno de análisis y paquetes
@@ -113,7 +115,7 @@ que facilitan la obtención, transformación y exploración de datos, así
 como la representación gráfica de los resultados.
 
 ```{r paquetes, results="hide", warning=FALSE, message=FALSE}
-packages = c("tidyverse","knitr", "rvest", "corrplot","jsonlite")
+packages = c("tidyverse","knitr", "rvest", "corrplot","jsonlite","ggplot2")
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     install.packages(x, dependencies = TRUE,repos='https://cloud.r-project.org')
@@ -124,6 +126,7 @@ package.check <- lapply(packages, FUN = function(x) {
 search()
 ```
 
+<<<<<<< HEAD
 ```{r  echo = FALSE}
 url_UCI <- paste0(
   "https://archive.ics.uci.edu/",
@@ -151,20 +154,37 @@ tema_aed <- theme_minimal(base_size = 11) +
   )
 theme_set(tema_aed)
 
+# Familias: paleta cualitativa Dark2 de ColorBrewer.
 col_familias <- c(
-  Cannabinoids = "#1B9E77", Depressants = "#D95F02",
-  Dissociatives = "#7570B3", Empathogens = "#CC79A7",
-  Opioids = "#0072B2", Psychedelics = "#A6761D",
-  Stimulants = "#666666"
+  Cannabinoids  = "#1B9E77",
+  Depressants   = "#D95F02",
+  Dissociatives = "#7570B3",
+  Empathogens   = "#E7298A",
+  Opioids       = "#66A61E",
+  Psychedelics  = "#E6AB02",
+  Stimulants    = "#A6761D"
 )
-col_sustancias <- c(cannabis = "#1B9E77", nicotine = "#E69F00",
-                    alcohol = "#0072B2")
+
+col_sustancias <- c(
+  cannabis = "#1B9E77",
+  nicotine = "#666666",
+  alcohol  = "#1F78B4"
+)
+col_paneles <- c(col_familias, col_sustancias[c("nicotine", "alcohol")])
+
+# Policonsumo: azules progresivamente más oscuros.
+col_consumo <- c(
+  "0"   = "#DEEBF7",
+  "1"   = "#9ECAE1",
+  "2-3" = "#4292C6",
+  "4+"  = "#08519C"
+)
+
 col_paneles <- c(col_familias, col_sustancias[c("nicotine", "alcohol")])
 col_genero <- c(Male = "#0072B2", Female = "#D95F02")
-col_atipicos <- c("Resto" = "grey65", "Atípico" = "#D55E00",
-                 "Declara Semeron" = "#0072B2")
-col_consumo <- c("0" = "#667788", "1" = "#0072B2",
-                 "2-3" = "#E69F00", "4+" = "#B54D00")
+col_atipicos <- c("Resto" = "#9ECAE1", "Atípico" = "#D55E00",
+                 "Declara Semeron" = "#08519C")
+
 col_grupos <- c("Consumo socialmente extendido" = "#0072B2",
                 "Otras sustancias" = "#D95F02")
 col_correlacion <- colorRampPalette(c("#D55E00", "white", "#0072B2"))(100)
@@ -180,6 +200,8 @@ dibujar_correlaciones <- function(matriz) {
 
 ```
 
+=======
+>>>>>>> 3f0f32ad6eddcc5787a32f56081c98d77acdc34e
 ## Obtención de datos
 
 El conjunto de datos utilizado corresponde a *Drug Consumption
@@ -213,11 +235,16 @@ datos <- read.csv(
 )
 ```
 
-```{r obtener_metadatos, include = FALSE, warning=FALSE, message=FALSE}
+
+
+```{r obtener_metadatos, results="hide", warning=FALSE, message=FALSE}
 metadatos <- jsonlite::fromJSON(
   "https://archive.ics.uci.edu/api/dataset?id=373"
 )
+
+head(metadatos$data$variables)
 ```
+
 
 Como fuente complementaria, se emplea una clasificación farmacológica
 basada en [*The Drugs Wheel*](https://thedrugswheel.com/). Esta
@@ -242,6 +269,9 @@ Una vez importados los datos, se examina la estructura y el contenido
 original de ambos datasets para identificar las transformaciones a
 realizar antes del análisis exploratorio y obtener un conjunto de datos
 consistente.
+El nombre de las variables no es suficientemente representativo con los
+valores orirginales. Se necesita acceder a los metadatos para obtener
+los valores más descriptivos.
 
 El conjunto de datos está formado por **32 variables**, que recogen
 información sobre las características sociodemográficas, psicológicas y
@@ -290,6 +320,14 @@ correspondiente. Estas variables permiten explorar posibles asociaciones
 entre las características de personalidad de los participantes y sus
 patrones de consumo de sustancias.
 
+```{r nombres_variables, results="hide", warning=FALSE, message=FALSE}
+nombres <- metadatos$data$variables$name
+stopifnot(length(nombres) == ncol(datos))
+names(datos) <- nombres
+
+names(datos)
+```
+
 A partir de un resumen estadístico inicial, se observa que las variables
 sociodemográficas y psicométricas presentan valores numéricos decimales,
 tanto positivos como negativos. Esto se debe a que los datos han sido
@@ -336,6 +374,7 @@ Esto permite entender los patrones de consumo de los participantes.
 ```{r}
 sort(unique(datos$alcohol))
 ```
+
 
 ###Comprobación de datos faltantes
 
@@ -544,7 +583,7 @@ datos_consumo_familias <- datos_consumo %>%
   summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
               else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 
-# Resumen reutilizable para edad, género, etnia o educación.
+#Resumen reutilizable para edad, género, etnia o educación.
 resumir_consumo <- function(ds, perfil, categoria) {
   ds %>%
     filter(!is.na(.data[[perfil]])) %>%
@@ -642,6 +681,7 @@ grafico_atipicos <- ggplot(puntos, aes(id, valor)) +
 
 grafico_atipicos
 ```
+
 
 En esta gráfica, la regla del boxplot establece un intervalo más
 estrecho y, por tanto, **identifica más valores atípicos** que Hampel y
@@ -751,8 +791,8 @@ datos_consumo <- datos_families %>%
 perfil_personas <- datos_consumo %>%
   distinct(id, age, gender, ethnicity)
 
-perfil_personas %>% count(age)
-perfil_personas %>% count(gender)
+table(perfil_personas$age)
+table(perfil_personas$gender)
 perfil_personas %>% count(ethnicity) %>%
   mutate(porcentaje = 100 * n / sum(n)) %>%
   arrange(desc(n))
@@ -937,6 +977,7 @@ grafico_etnia_sustancias <- ggplot(
 
 grafico_etnia_sustancias
 ```
+
 
 ```{r fig_etnia_grupos, fig.cap="Consumo reciente por etnia y grupo de sustancias. Etiquetas: consumidores/respuestas disponibles. El grupo socialmente extendido incluye alcohol, cafeína y nicotina; se excluyen chocolate y Semeron."}
 consumo_grupos <- datos_consumo %>%
