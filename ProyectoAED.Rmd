@@ -1,20 +1,23 @@
 ---
-title: "Consumo de sustancias y factores sociodemográficos y de personalidad: un análisis exploratorio"
+title: 'Consumo de sustancias y factores sociodemográficos y de personalidad: un análisis
+  exploratorio'
 author:
-  - name: "Pau Bover Femenias"
-    affil: "1"
-  - name: "Francesc Oliver Catany"
-    affil: "1"
-  - name: "Marino Fernandez Perez"
-    affil: "1"
+- name: Pau Bover Femenias
+  affil: '1'
+- name: Francesc Oliver Catany
+  affil: '1'
+- name: Marino Fernandez Perez
+  affil: '1'
 affiliation:
-  - num: 1
-    address: |
-      Universitat de València, Grado en Ciencia de Datos,
-      València, España.
-    email: "PENDIENTE_DE_COMPLETAR"
-authorcitation: |
-  Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
+- num: 1
+  address: |
+    Universitat de València, Grado en Ciencia de Datos,
+    València, España.
+  email: PENDIENTE_DE_COMPLETAR
+output:
+  rticles::mdpi_article:
+     extra_dependencies: ["longtable", "xurl", "fvextra"]
+  pdf_document: default
 journal: notspecified
 type: article
 status: submit
@@ -60,28 +63,28 @@ dataavailability: |
 conflictsofinterest: |
   Pendiente de declaración por los autores.
 abbreviations:
-  - short: UCI
-    long: University of California, Irvine
-  - short: EDA
-    long: Exploratory Data Analysis
-  - short: BIS-11
-    long: Barratt Impulsiveness Scale
+- short: UCI
+  long: University of California, Irvine
+- short: EDA
+  long: Exploratory Data Analysis
+- short: "BIS-11"
+  long: Barratt Impulsiveness Scale
 endnotes: false
-output:
-  rticles::mdpi_article:
-    extra_dependencies: longtable
+authorcitation: |
+  Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
 editor_options:
   markdown:
     wrap: 72
 header-includes:
   - \providecommand{\pandocbounded}[1]{#1}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
 ---
 
 # Introducción
 
 El consumo de sustancias constituye un fenómeno en el que intervienen diversos factores sociodemográficos y psicológicos. Su estudio permitirá identificar patrones de consumo, diferencias entre grupos de población y asociaciones en un consumo incitado y variado de sustanicas por determinados rasgos psicológicos.
 
-En este trabajo se realizará un **análisis exploratorio de datos** sobre el conjunto *Drug Consumption (Quantified)*, disponible en el repositorio UCI Machine Learning (<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>). Este recoge información de 1.885 participantes sobre el consumo de 19 sustancias, junto con características sociodemográficas y distintos rasgos de personalidad. Asimismo, se incorporará una clasificación de las sustancias por familias farmacológicas, basada en *The Drugs Wheel (*<https://thedrugswheel.com>), con el propósito de ampliar las posibilidades de análisis.
+En este trabajo se realizará un **análisis exploratorio de datos** sobre el conjunto *Drug Consumption (Quantified)*, disponible en el [repositorio UCI Machine Learning](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified). Este recoge información de 1.885 participantes sobre el consumo de 19 sustancias, junto con características sociodemográficas y distintos rasgos de personalidad. Asimismo, se incorporará una clasificación de las sustancias por familias farmacológicas, basada en *[The Drugs Wheel](<https://thedrugswheel.com>)*, con el propósito de ampliar las posibilidades de análisis.
 
 El objetivo principal es explorar la relación entre las características sociodemográficas y psicológicas de los participantes y sus patrones de consumo. En particular, se estudiarán las diferencias asociadas con la edad, el género, la etnia y el nivel educativo, así como la relación entre la impulsividad, la búsqueda de sensaciones y el policonsumo de sustancias, sin establecer relaciones causales.
 
@@ -89,19 +92,19 @@ El objetivo principal es explorar la relación entre las características sociod
 
 ```{r mdpi_setup, include=FALSE}
 knitr::opts_chunk$set(
-  echo = FALSE,
-  message = FALSE,
-  warning = FALSE,
-  fig.align = "center",
+  echo = TRUE, message = FALSE, warning = FALSE,
+  fig.width = 7, fig.height = 4,
+  out.width = "\\linewidth", fig.align = "center",
   comment = NA
 )
+options(width = 80)
 ```
 
 ## Entorno de análisis y paquetes
 
 Aqui debemos explicar brevemente en que consisten las librerias utilizads, sin definir cada una de ellas. Envolvemos lo que nos ofrece cada una en un texto pero sin que este enumere las posibilidades de cada una de ellas.
 
-```{r paquetes, results="hide", warning=FALSE, message=FALSE}
+```{r paquetes, results="hide", warning=FALSE, message=FALSE, echo = FALSE}
 
 # Especificamos las librerías necesarias en esta lista
 
@@ -122,6 +125,14 @@ package.check <- lapply(packages, FUN = function(x) {
 search()
 ```
 
+```{r  echo = FALSE}
+url_UCI <- paste0(
+  "https://archive.ics.uci.edu/",
+  "static/public/373/drug+consumption+quantified.zip"
+)
+```
+
+
 ## Obtención de datos
 
 Se utilizará el conjunto de datos *Drug Consumption (Quantified)* (<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>), obtenido del repositorio UCI Machine Learning. 
@@ -129,17 +140,14 @@ Se utilizará el conjunto de datos *Drug Consumption (Quantified)* (<https://arc
 ```{r descarga_datos, results="hide", warning=FALSE, message=FALSE}
 # Creamos la carpeta donde guardaremos los datos
 dir.create("data", showWarnings = FALSE)
-
 # Descargamos el archivo comprimido del dataset desde UCI.
 download.file(
-  url = "https://archive.ics.uci.edu/static/public/373/drug+consumption+quantified.zip",
+  url = url_UCI,
   destfile = "data/drug_consumption.zip",
   mode = "wb"
 )
-
 # Extraemos los archivos en la carpeta data.
 unzip("data/drug_consumption.zip", exdir = "data")
-
 # Importamos los datos: están separados por comas y no tienen cabecera.
 datos <- read.csv(
   "data/drug_consumption.data",
