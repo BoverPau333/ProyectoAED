@@ -631,6 +631,16 @@ outliers %>% group_by(variable, metodo) %>%
 ```
 
 ```{r fig_densidad_cscore, fig.cap="Distribución de cscore y umbrales de detección. Los puntos se desplazan ligeramente en horizontal para reducir el solapamiento."}
+puntos <- outliers %>%
+  filter(variable == "cscore") %>%
+  mutate(grupo = case_when(
+    id %in% personas_semeron$id ~ "Declara Semeron",
+    atipico ~ "Atípico", TRUE ~ "Resto"
+  )) %>%
+  arrange(grupo == "Declara Semeron")
+
+limites <- puntos %>% distinct(metodo, inf, sup)
+
 valores <- puntos %>% distinct(id, valor)
 d <- density(valores$valor, na.rm = TRUE)
 curva <- tibble(valor = d$x, densidad = d$y)
