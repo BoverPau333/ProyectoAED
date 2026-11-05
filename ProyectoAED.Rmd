@@ -408,17 +408,14 @@ summary(datos[2:6])
 
 ### Transformación de variables psicológicas
 
-Las variables psicológicas requieren dos procedimientos de
-transformación. Por un lado, se recuperan las puntuaciones originales de
-las cinco dimensiones del modelo *Big Five* y, por otro, se normalizan
-las escalas de impulsividad (BIS-11) y búsqueda de sensaciones (ImpSS)
-para situarlas en una escala común.
+Las variables psicológicas requieren recuperar las puntuaciones
+originales del *Big Five* y normalizar las escalas de impulsividad
+(BIS-11) y búsqueda de sensaciones (ImpSS).
 
-Para el Big Five se reconstruyen las puntuaciones originales mediante
-sus posiciones ordenadas y las puntuaciones observadas documentadas por
-UCI. Una transformación lineal no recuperaría exactamente los valores
-originales porque la codificación publicada no conserva distancias
-uniformes.
+Para el *Big Five*, se relacionan los valores transformados, ordenados
+de menor a mayor, con las puntuaciones originales documentadas por UCI,
+evitando una transformación lineal que no permitiría recuperarlas
+exactamente.
 
 ```{r recuperacion_big_five, results="hide", warning=FALSE, message=FALSE}
 big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
@@ -442,12 +439,10 @@ for (v in big_five) {
 ```
 
 Por su parte, las variables de impulsividad y búsqueda de sensaciones se
-normalizan mediante una transformación mínimo-máximo, situando sus
-valores en el intervalo [0, 1] para facilitar su comparación.
+normalizan mediante una transformación **MinMax**, situando sus valores
+en el intervalo [0, 1] para facilitar su comparación.
 
 ```{r normalizacion_impulsividad_ss, results="hide", warning=FALSE, message=FALSE}
-# Impulsivity and Sensation Seeking
-
 datos <- datos %>%
   mutate(
     impulsive = (impulsive - min(impulsive)) /
@@ -485,79 +480,6 @@ datos <- datos %>%
                          ordered = TRUE)))
 
 table(datos$alcohol)
-```
-
-### Variables psicométricas
-
-Se recuperan las puntuaciones observadas del Big Five a partir del
-diccionario publicado por UCI. Las escalas de impulsividad (BIS-11) y
-búsqueda de sensaciones (ImpSS) se mantienen como valores numéricos
-transformados antes de su reescalado Min-Max, dado que la documentación
-suministrada no permite reconstruir las puntuaciones originales de esos
-instrumentos.
-
-```{r inspeccion_impulsividad, results="hide", warning=FALSE, message=FALSE}
-datos %>%
-  select(impulsive, ss) %>%
-  summary()
-
-sort(unique(datos$impulsive))
-sort(unique(datos$ss))
-```
-
-Para el Big Five se reconstruyen las puntuaciones originales mediante
-sus posiciones ordenadas y las puntuaciones observadas documentadas por
-UCI. Una transformación lineal no recuperaría exactamente los valores
-originales porque la codificación publicada no conserva distancias
-uniformes.
-
-```{r recuperacion_big_five, results="hide", warning=FALSE, message=FALSE}
-big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
-
-# Puntuaciones originales publicadas por UCI teniendo en cuenta los faltantes
-scores <- list(
-  nscore = 12:60,
-  escore = c(16, 18:56, 58:59),
-  oscore = c(24, 26, 28:60),
-  ascore = c(12, 16, 18, 23:60),
-  cscore = c(17, 19:57, 59)
-)
-
-# recuperar las puntuaciones originales sin transformación lineal, asi obtenemos exactamente los valores originales
-
-for (v in big_five) {
-  datos[[v]] <- scores[[v]][
-    match(datos[[v]], sort(unique(datos[[v]])))
-  ]
-}
-
-```
-
-Se reescalan por separado las variables `impulsive` y `ss` a [0, 1]
-mediante Min-Max, conservando su orden. Este reescalado no recupera las
-puntuaciones originales de sus cuestionarios. Las cinco dimensiones Big
-Five permanecen en las puntuaciones reconstruidas de la escala original.
-
-```{r normalizacion_impulsividad_ss, results="hide", warning=FALSE, message=FALSE}
-# Impulsivity and Sensation Seeking
-
-datos <- datos %>%
-  mutate(
-    impulsive = (impulsive - min(impulsive)) /
-                     (max(impulsive) - min(impulsive)),
-
-    ss = (ss - min(ss)) /
-              (max(ss) - min(ss))
-  )
-
-# Comprobar resultados
-summary(datos$impulsive)
-summary(datos$ss)
-
-# Validation
-table(datos$impulsive)
-table(datos$ss)
-
 ```
 
 ## Clasificación de sustancias y construcción de variables de consumo
