@@ -238,27 +238,39 @@ classification <- tables[[1]]
 
 ## Descripción y preprocesamiento de variables
 
-El nombre de las variables no es suficientemente representativo con los
-valores orirginales. Se necesita acceder a los metadatos para obtener
-los valores más descriptivos.
-
-```{r}
-colnames(datos)
-```
-
-Se asignan correctamente usando los metadatos.
+Una vez importados los datos, se examina la estructura y el contenido
+original de ambos datasets para identificar las transformaciones a
+realizar antes del análisis exploratorio y obtener un conjunto de datos
+consistente.
 
 El conjunto de datos está formado por **32 variables**, que recogen
 información sobre las características sociodemográficas, psicológicas y
-los hábitos de consumo de sustancias de los participantes. Las variables
-sociodemográficas incluyen aspectos como la edad, el género, el nivel
-educativo, el país de procedencia y la etnia. Por su parte, las
-variables psicológicas permiten evaluar distintos rasgos de
-personalidad, como las cinco dimensiones del modelo Big Five, la
-impulsividad y la búsqueda de sensaciones.
+los hábitos de consumo de sustancias de los participantes.
 
-Entre las variables psicológicas se incluyen las cinco dimensiones del
-modelo **Big Five**, un modelo ampliamente utilizado en psicología para
+```{r propiedades_dataset, warning=FALSE, message=FALSE}
+dim(datos)
+colnames(datos)
+```
+
+Dado que el fichero original carece de cabeceras identificativas, se
+recuperan los nombres reales de las variables mediante los metadatos ya
+descargados, facilitando su interpretación y posterior procesamiento.
+
+```{r nombres_variables, warning=FALSE, message=FALSE}
+nombres <- metadatos$data$variables$name
+stopifnot(length(nombres) == ncol(datos))
+names(datos) <- nombres
+
+colnames(datos)
+```
+
+Entre estas, se identifican variables sociodemográficas, que incluyen
+aspectos como la edad, el género, el nivel educativo y la etnia. Por
+otro lado, las variables psicológicas permiten evaluar distintos rasgos
+de personalidad, como la impulsividad, la búsqueda de sensaciones o las
+cinco dimensiones del modelo **Big Five**.
+
+Este último es un modelo ampliamente utilizado en psicología para
 describir la personalidad humana a partir de cinco grandes rasgos:
 
 - **Neuroticismo (`nscore`):** mide la tendencia a experimentar
@@ -277,14 +289,6 @@ puntuación más elevada indica una mayor presencia del rasgo
 correspondiente. Estas variables permiten explorar posibles asociaciones
 entre las características de personalidad de los participantes y sus
 patrones de consumo de sustancias.
-
-```{r nombres_variables, results="hide", warning=FALSE, message=FALSE}
-nombres <- metadatos$data$variables$name
-stopifnot(length(nombres) == ncol(datos))
-names(datos) <- nombres
-
-names(datos)
-```
 
 A partir de un resumen estadístico inicial, se observa que las variables
 sociodemográficas y psicométricas presentan valores numéricos decimales,
@@ -639,7 +643,6 @@ grafico_atipicos <- ggplot(puntos, aes(id, valor)) +
 grafico_atipicos
 ```
 
-
 En esta gráfica, la regla del boxplot establece un intervalo más
 estrecho y, por tanto, **identifica más valores atípicos** que Hampel y
 tres sigma. Estos dos últimos métodos presentan límites similares y
@@ -934,7 +937,6 @@ grafico_etnia_sustancias <- ggplot(
 
 grafico_etnia_sustancias
 ```
-
 
 ```{r fig_etnia_grupos, fig.cap="Consumo reciente por etnia y grupo de sustancias. Etiquetas: consumidores/respuestas disponibles. El grupo socialmente extendido incluye alcohol, cafeína y nicotina; se excluyen chocolate y Semeron."}
 consumo_grupos <- datos_consumo %>%
