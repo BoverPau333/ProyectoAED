@@ -340,38 +340,38 @@ Por ello, se recuperarán las categorías sociodemográficas y las
 puntuaciones originales del modelo *Big Five*, además de realizar las
 transformaciones necesarias sobre las restantes variables psicológicas.
 
-### Comprobación de datos faltantes
+### Integridad del conjunto de datos
 
-Queremos comprobar que no tenemos datos faltantes en el dataset. Como
-podemos observar todas las instancias estan completas.
+Antes de aplicar las transformaciones, revisamos la estructura y
+comprobamos la integridad del conjunto de datos, identificando posibles
+valores ausentes y registros duplicados que pudieran afectar a los
+resultados del análisis.
 
-```{r}
+```{r comprobar_integridad, include = TRUE}
 colSums(is.na(datos))
-
+sum(duplicated(datos$id)) 
 ```
 
-## Preprocesamiento y tratamiento de variables
+Al no presentar ninguna de estas anomalías, no es necesario realizar
+operaciones de imputación ni eliminación de registros. No obstante, en
+los nombres de las variables mostrados durante la comprobación se
+observa una errata en la denominación de la impulsividad, registrada
+como `impuslive`.
 
-Podemos observar que, entre las distintas variables que caracterizan
-cada uno de los registros recogidos en el dataset, la variable
-`impuslive` refiere a la impulsividad. No obstante, el nombre cuenta con
-un fallo ortografico que la hace no ser lo suficientemente
-representativa, dando lugar a problemas de interpretación.
-
-Por ello, corregimos a `impulsive` mediante la función `rename` de la
-biblioteca `dplyr`.
+Por tanto, se corrige a `impulsive` para facilitar su identificación y
+posterior tratamiento.
 
 ```{r corregir_impulsive, results="hide", warning=FALSE, message=FALSE}
 datos <- rename(datos, impulsive = impuslive)
-head(datos["impulsive"],3)
 ```
 
-### Variables sociodemográficas
+### Decodificación de variables sociodemográficas
 
-Las variables sociodemográficas se recodifican como factores nominales u
-ordinales a partir de las equivalencias publicadas por UCI.
+Para facilitar la interpretación de las variables sociodemográficas, se
+sustituyen sus códigos numéricos por las categorías originales recogidas
+en la documentación de UCI mediante la función `factor()`.
 
-```{r categorias_demografia, results="hide", warning=FALSE, message=FALSE}
+```{r decodificacion_sociodemografica, results="hide", warning=FALSE, message=FALSE}
 datos <- datos %>%
   mutate(
     age = factor(age,
@@ -401,7 +401,69 @@ datos <- datos %>%
                                   "White-Black", "Other",
                                   "White-Asian", "Black-Asian"))
   )
-lapply(datos[c("age", "gender", "education", "country", "ethnicity")], table)
+
+summary(datos[2:6])
+# lapply(datos[c("age", "gender", "education", "country", "ethnicity")], table)
+```
+
+### Transformación de variables psicológicas
+
+Las variables psicológicas requieren dos procedimientos de
+transformación. Por un lado, se recuperan las puntuaciones originales de
+las cinco dimensiones del modelo *Big Five* y, por otro, se normalizan
+las escalas de impulsividad (BIS-11) y búsqueda de sensaciones (ImpSS)
+para situarlas en una escala común.
+
+Para el Big Five se reconstruyen las puntuaciones originales mediante
+sus posiciones ordenadas y las puntuaciones observadas documentadas por
+UCI. Una transformación lineal no recuperaría exactamente los valores
+originales porque la codificación publicada no conserva distancias
+uniformes.
+
+```{r recuperacion_big_five, results="hide", warning=FALSE, message=FALSE}
+big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
+
+# Puntuaciones originales publicadas por UCI teniendo en cuenta los faltantes
+scores <- list(
+  nscore = 12:60,
+  escore = c(16, 18:56, 58:59),
+  oscore = c(24, 26, 28:60),
+  ascore = c(12, 16, 18, 23:60),
+  cscore = c(17, 19:57, 59)
+)
+
+# recuperar las puntuaciones originales sin transformación lineal, asi obtenemos exactamente los valores originales
+
+for (v in big_five) {
+  datos[[v]] <- scores[[v]][
+    match(datos[[v]], sort(unique(datos[[v]])))
+  ]
+}
+```
+
+Por su parte, las variables de impulsividad y búsqueda de sensaciones se
+normalizan mediante una transformación mínimo-máximo, situando sus
+valores en el intervalo [0, 1] para facilitar su comparación.
+
+```{r normalizacion_impulsividad_ss, results="hide", warning=FALSE, message=FALSE}
+# Impulsivity and Sensation Seeking
+
+datos <- datos %>%
+  mutate(
+    impulsive = (impulsive - min(impulsive)) /
+      (max(impulsive) - min(impulsive)),
+    
+    ss = (ss - min(ss)) /
+      (max(ss) - min(ss))
+  )
+
+# Comprobar resultados
+summary(datos$impulsive)
+summary(datos$ss)
+
+# Validation
+table(datos$impulsive)
+table(datos$ss)
 ```
 
 ### Categorías de consumo
