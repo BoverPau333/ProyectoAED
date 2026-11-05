@@ -62,6 +62,7 @@ editor_options:
     wrap: 72
 header-includes:
   - \providecommand{\pandocbounded}[1]{#1}
+  - \usepackage{lmodern}
   - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
   - \usepackage{etoolbox}
   - \AtBeginEnvironment{verbatim}{\scriptsize}
@@ -147,7 +148,9 @@ col_familias <- c(
   Empathogens   = "#E7298A",
   Opioids       = "#66A61E",
   Psychedelics  = "#E6AB02",
-  Stimulants    = "#A6761D"
+  Stimulants    = "#A6761D",
+  Other         = "#999999",
+  Fake          = "#4D4D4D"
 )
 
 col_sustancias <- c(
@@ -245,10 +248,9 @@ classification <- tables[[1]]
 
 ## Descripción y preprocesamiento de variables
 
-Una vez importados los datos, se examina la estructura y el contenido
-original de ambos datasets para identificar las transformaciones a
-realizar antes del análisis exploratorio y obtener un conjunto de datos
-consistente.
+Una vez obtenidas las fuentes de datos, se examina su estructura y
+contenido para identificar las transformaciones necesarias antes del
+análisis exploratorio y obtener un conjunto de datos consistente.
 
 El conjunto de datos está formado por **32 variables**, que recogen
 información sobre las características sociodemográficas, psicológicas y
@@ -275,8 +277,9 @@ Entre estas, se identifican variables **sociodemográficas**, que
 incluyen aspectos como la edad, el género, el nivel educativo y la
 etnia, variables **psicológicas**, que permitirán evaluar distintos
 rasgos de personalidad y su influencia en el consumo, y variables **de
-consumo**, donde cada una de las 19 sustancias dispone de una columna
-propia que registra el tiempo transcurrido desde su último consumo.
+consumo**, que recoge 19 sustancias distintas donde cada una dispone de
+una columna propia que registra el tiempo transcurrido desde su último
+consumo.
 
 Entre las variables psicológicas se encuentran la impulsividad, la
 búsqueda de sensaciones y las cinco dimensiones del modelo *Big Five*,
@@ -294,12 +297,17 @@ mediante los siguientes rasgos:
 - **Responsabilidad (`cscore`):** mide aspectos relacionados con la
   organización, la autodisciplina y el cumplimiento de objetivos.
 
-Por último, las variables de consumo se encuentran codificadas mediante
-siete categorías ordinales (`CL0`–`CL6`), que indican el tiempo
-transcurrido desde el último consumo de cada sustancia, tal como se
-recoge en la Tabla \ref{tab:codificacion_consumo}. Esta codificación
-permite distinguir entre quienes nunca han consumido una sustancia y
-quienes lo han hecho en diferentes periodos temporales.
+Por último, las variables de consumo corresponden a distintas
+sustancias, identificadas mediante su nombre o abreviatura. Entre las
+denominaciones menos evidentes se
+encuentran `meth` (metadona), `legalh` (*legal highs*), `vsa` (abuso de
+sustancias volátiles) y `semer`, una sustancia ficticia incluida en el
+cuestionario original.
+
+Estas variables se encuentran codificadas mediante siete categorías
+ordinales (`CL0`–`CL6`), que indican el tiempo transcurrido desde el
+último consumo de cada sustancia, tal como se recoge en la Tabla
+\ref{tab:codificacion_consumo}.
 
 \begin{table}[ht]
 \centering
@@ -452,27 +460,24 @@ datos <- datos %>%
       (max(ss) - min(ss))
   )
 
-# Comprobar resultados
-summary(datos$impulsive)
-summary(datos$ss)
-
-# Validation
-table(datos$impulsive)
-table(datos$ss)
+summary(datos[c("impulsive", "ss")])
 ```
 
-### Categorías de consumo
+### Decodificación del consumo
+
+Aunque los códigos `CL0`–`CL6` permiten identificar el momento del
+último consumo, su significado no queda claro sin consultar las
+equivalencias anteriores. Por ello, se sustituyen
+mediante `factor()` por etiquetas temporales más descriptivas,
+conservando su orden para facilitar la interpretación de los datos.
 
 ```{r categorias_consumo, results="hide", warning=FALSE, message=FALSE}
-variables_consumo <- c(
-  "alcohol", "amphet", "amyl", "benzos", "caff",
-  "cannabis", "choc", "coke", "crack", "ecstasy",
-  "heroin", "ketamine", "legalh", "lsd", "meth",
-  "mushrooms", "nicotine", "semer", "vsa"
-)
+# Identificamos las columnas correspondientes a las sustancias
+substances <- names(datos)[14:32]
 
+# Decodificamos las categorías de consumo
 datos <- datos %>%
-  mutate(across(all_of(variables_consumo),
+  mutate(across(all_of(substances),
                 ~ factor(.x,
                          levels = paste0("CL", 0:6),
                          labels = c("Never", ">10 years ago", "Last 10 years",
@@ -482,15 +487,20 @@ datos <- datos %>%
 table(datos$alcohol)
 ```
 
-## Clasificación de sustancias y construcción de variables de consumo
+### Clasificación farmacológica de las sustancias
 
-### Clasificación farmacológica
+A partir de las siete familias de *The Drugs Wheel*, se establece una
+correspondencia con las 19 sustancias del conjunto UCI. Dado que algunas
+no pueden asignarse directamente a estas familias, se incorporan dos
+categorías adicionales: 
 
-```{r familias_sustancias, results="hide", warning=FALSE, message=FALSE}
+- `Other`, para `legalh`
+
+- `Fake`, para `semer`
+
+```{r familias_sustancias, include = TRUE, warning=FALSE, message=FALSE}
 families <- classification$Name
 families <- c(families, "Other", "Fake" )
-
-substances <- names(datos)[14:32]
 
 uci_classification <- data.frame(
   substance = substances,
@@ -503,7 +513,20 @@ uci_classification <- data.frame(
 table(uci_classification$family)
 ```
 
-### Reestructuración de datos y consumo reciente
+### Reestructuración de los datos
+
+Hasta ahora, el conjunto de datos presenta un formato ancho, con una
+columna de consumo por sustancia. Para facilitar el estudio de los
+patrones de consumo y su relación con las familias farmacológicas, se
+utiliza `pivot_longer()` para reorganizar los datos en formato *tidy*,
+agrupando las variables de consumo en dos columnas: la sustancia y el
+momento de su último consumo.
+
+Finalmente, mediante `left_join()`, se incorpora la familia
+farmacológica correspondiente a cada sustancia, completando así el
+preprocesamiento y obteniendo un conjunto de datos preparado para el
+análisis exploratorio tanto por sustancias individuales como por
+familias.
 
 ```{r construccion_datos_consumo, results="hide", warning=FALSE, message=FALSE}
 datos_families <- datos %>%
@@ -513,6 +536,8 @@ datos_families <- datos %>%
     values_to = "consumption"
   ) %>%
   left_join(uci_classification, by = "substance")
+
+head(datos_families)
 
 # Consumo reciente por sustancia: conservamos esta tabla para otros análisis.
 datos_consumo <- datos_families %>%
@@ -543,8 +568,6 @@ resumir_consumo <- function(ds, perfil, categoria) {
 
 consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
 consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
-
-str(datos_families)
 ```
 
 # Resultados
@@ -870,8 +893,80 @@ puntos porcentuales pueden representar una proporción considerable.
 Estos resultados describen diferencias en la muestra y no permiten
 atribuirlas exclusivamente al género.
 
+### Etnia
+
+```{r fig_consumo_etnia, fig.cap="Consumo reciente por etnia. Puntos: porcentajes; líneas: intervalos de Wilson al 95%; etiquetas: consumidores/respuestas disponibles. Se omite Black-Asian por su reducido tamaño. Los intervalos no corrigen sesgos de selección."}
+orden_etnias <- perfil_personas %>%
+  filter(!is.na(ethnicity), ethnicity != "Black-Asian") %>%
+  count(ethnicity, sort = TRUE) %>% pull(ethnicity) %>% as.character()
+
+etnia_intervalos <- consumo_etnia %>%
+  filter(substance %in% c("alcohol", "nicotine", "cannabis"),
+         n > 0, ethnicity %in% orden_etnias) %>%
+  mutate(p = consumidores / n,
+         centro = (p + 1.96^2 / (2 * n)) / (1 + 1.96^2 / n),
+         margen = 1.96 * sqrt(p * (1 - p) / n + 1.96^2 / (4 * n^2)) /
+           (1 + 1.96^2 / n),
+         inferior = pmax(0, 100 * (centro - margen)),
+         superior = pmin(100, 100 * (centro + margen)),
+         ethnicity = factor(ethnicity, levels = rev(orden_etnias)),
+         substance = factor(substance, levels = c("alcohol", "nicotine", "cannabis")))
+
+grafico_etnia_sustancias <- ggplot(
+  etnia_intervalos, aes(porcentaje, ethnicity, color = substance)
+) +
+  geom_segment(aes(x = inferior, xend = superior, yend = ethnicity), linewidth = 0.8) +
+  geom_point(size = 2.5) +
+  geom_text(aes(label = paste0(consumidores, "/", n)),
+            vjust = -1, size = 2.7, color = "grey30") +
+  facet_wrap(~ substance, nrow = 1) +
+  scale_color_manual(values = col_sustancias) +
+  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 25),
+                     labels = porcentaje_eje, expand = expansion(mult = 0.1)) +
+  scale_y_discrete(expand = expansion(add = 0.8)) +
+  labs(x = "Consumo reciente (%)", y = NULL) +
+  theme(legend.position = "none",
+        panel.grid.major.y = element_line(linetype = "dotted"))
+
+grafico_etnia_sustancias
+```
+
+```{r fig_etnia_grupos, fig.cap="Consumo reciente por etnia y grupo de sustancias. Etiquetas: consumidores/respuestas disponibles. El grupo socialmente extendido incluye alcohol, cafeína y nicotina; se excluyen chocolate y Semeron."}
+consumo_grupos <- datos_consumo %>%
+  filter(!substance %in% c("choc", "semer")) %>%
+  mutate(grupo = if_else(substance %in% c("alcohol", "caff", "nicotine"),
+                         "Consumo socialmente extendido", "Otras sustancias")) %>%
+  group_by(id, ethnicity, grupo) %>%
+  summarise(consume = if (any(reciente, na.rm = TRUE)) TRUE
+            else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
+
+resumen_etnia <- consumo_grupos %>%
+  filter(ethnicity %in% orden_etnias) %>%
+  group_by(ethnicity, grupo) %>%
+  summarise(n = sum(!is.na(consume)), consumidores = sum(consume, na.rm = TRUE),
+            .groups = "drop") %>%
+  mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_),
+         ethnicity = factor(ethnicity, levels = orden_etnias))
+
+grafico_etnia_grupos <- ggplot(resumen_etnia, aes(ethnicity, porcentaje, fill = grupo)) +
+  geom_col(position = position_dodge(0.8), width = 0.7) +
+  geom_text(aes(label = paste0(consumidores, "/", n)),
+            position = position_dodge(0.8), vjust = -0.4, size = 2.7) +
+  scale_fill_manual(values = col_grupos) +
+  scale_y_continuous(limits = c(0, 112), breaks = seq(0, 100, 25),
+                     labels = porcentaje_eje) +
+  labs(x = NULL, y = "Consumo reciente (%)") +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1),
+        panel.grid.major.x = element_blank())
+
+grafico_etnia_grupos
+```
 
 ## Consumo reciente según nivel educativo
+
+```{r tabla_educacion, warning=FALSE, message=FALSE}
+print(consumo_educacion, n = 5)
+```
 
 La categoría *Some college* corresponde a estudios universitarios sin
 titulación; el dataset no permite distinguir entre estudiantes actuales
@@ -893,6 +988,27 @@ grafico_educacion <- ggplot(
         panel.grid.major.x = element_blank())
 
 grafico_educacion
+```
+
+```{r fig_mapa_educacion, fig.cap="Porcentaje de consumo reciente por sustancia y nivel educativo, agrupado por familias."}
+consumo_sustancias_educacion <- datos_consumo %>%
+  filter(!substance %in% excluir_familias) %>%
+  group_by(education, family, substance) %>%
+  summarise(porcentaje = 100 * mean(reciente, na.rm = TRUE), .groups = "drop")
+
+grafico_mapa_educacion <- ggplot(
+  consumo_sustancias_educacion, aes(education, substance, fill = porcentaje)
+) +
+  geom_tile(color = "white") +
+  facet_grid(family ~ ., scales = "free_y", space = "free_y") +
+  scale_fill_gradient(low = "#EFF6FA", high = "#0072B2", limits = c(0, 100),
+                      name = "Consumo (%)") +
+  labs(x = NULL, y = NULL) +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
+        panel.grid = element_blank(), legend.position = "bottom",
+        legend.title = element_text(size = 9))
+
+grafico_mapa_educacion
 ```
 
 ## Impulsividad, búsqueda de sensaciones y policonsumo
@@ -1023,14 +1139,9 @@ Los porcentajes obtenidos muestran que el uso de varias sustancias es
 ambas características**, aunque esta diferencia es mayor para la
 búsqueda de sensaciones.
 
-
-### Etnia
+### Policonsumo por etnia
 
 ```{r fig_policonsumo_etnia, fig.cap="Distribución del policonsumo por etnia durante los últimos doce meses. Se excluyen alcohol, cafeína, chocolate y Semeron. Las etiquetas del eje indican el tamaño de cada grupo."}
-orden_etnias <- perfil_personas %>%
-  filter(!is.na(ethnicity), ethnicity != "Black-Asian") %>%
-  count(ethnicity, sort = TRUE) %>% pull(ethnicity) %>% as.character()
-
 policonsumo_etnia <- policonsumo %>%
   left_join(perfil_personas %>% select(id, ethnicity), by = "id") %>%
   filter(ethnicity %in% orden_etnias, !is.na(grupo)) %>%
