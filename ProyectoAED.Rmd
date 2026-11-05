@@ -1,19 +1,20 @@
 ---
-title: 'Consumo de sustancias y factores sociodemográficos y de personalidad: un análisis
-  exploratorio'
+title: "Consumo de sustancias y factores sociodemográficos y de personalidad: un análisis exploratorio"
 author:
-- name: Pau Bover Femenias
-  affil: '1'
-- name: Francesc Oliver Catany
-  affil: '1'
-- name: Marino Fernandez Perez
-  affil: '1'
+  - name: "Pau Bover Femenias"
+    affil: "1"
+  - name: "Francesc Oliver Catany"
+    affil: "1"
+  - name: "Marino Fernandez Perez"
+    affil: "1"
 affiliation:
-- num: 1
-  address: |
-    Universitat de València, Grado en Ciencia de Datos,
-    València, España.
-  email: PENDIENTE_DE_COMPLETAR
+  - num: 1
+    address: |
+      Universitat de València, Grado en Ciencia de Datos,
+      València, España.
+    email: "PENDIENTE_DE_COMPLETAR"
+authorcitation: |
+  Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
 output:
   rticles::mdpi_article:
      extra_dependencies: ["longtable", "xurl", "fvextra"]
@@ -63,15 +64,13 @@ dataavailability: |
 conflictsofinterest: |
   Pendiente de declaración por los autores.
 abbreviations:
-- short: UCI
-  long: University of California, Irvine
-- short: EDA
-  long: Exploratory Data Analysis
-- short: "BIS-11"
-  long: Barratt Impulsiveness Scale
+  - short: UCI
+    long: University of California, Irvine
+  - short: EDA
+    long: Exploratory Data Analysis
+  - short: BIS-11
+    long: Barratt Impulsiveness Scale
 endnotes: false
-authorcitation: |
-  Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
 editor_options:
   markdown:
     wrap: 72
@@ -82,11 +81,17 @@ header-includes:
 
 # Introducción
 
-El consumo de sustancias constituye un fenómeno en el que intervienen diversos factores sociodemográficos y psicológicos. Su estudio permitirá identificar patrones de consumo, diferencias entre grupos de población y asociaciones en un consumo incitado y variado de sustanicas por determinados rasgos psicológicos.
+El consumo de sustancias presenta patrones diversos, tanto por el tipo
+de droga como por la combinación de varias de ellas. Su estudio
+permitirá identificar diferencias entre grupos de población y explorar
+qué características individuales pueden estar asociadas con estos
+comportamientos.
 
-En este trabajo se realizará un **análisis exploratorio de datos** sobre el conjunto *Drug Consumption (Quantified)*, disponible en el [repositorio UCI Machine Learning](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified). Este recoge información de 1.885 participantes sobre el consumo de 19 sustancias, junto con características sociodemográficas y distintos rasgos de personalidad. Asimismo, se incorporará una clasificación de las sustancias por familias farmacológicas, basada en *[The Drugs Wheel](<https://thedrugswheel.com>)*, con el propósito de ampliar las posibilidades de análisis.
-
-El objetivo principal es explorar la relación entre las características sociodemográficas y psicológicas de los participantes y sus patrones de consumo. En particular, se estudiarán las diferencias asociadas con la edad, el género, la etnia y el nivel educativo, así como la relación entre la impulsividad, la búsqueda de sensaciones y el policonsumo de sustancias, sin establecer relaciones causales.
+El objetivo de este trabajo es analizar cómo varía el consumo según el
+perfil de los participantes, prestando especial atención a la edad, el
+género, la etnia y el nivel educativo. Asimismo, se estudiará la
+relación entre determinados rasgos psicológicos y el policonsumo,
+buscando identificar asociaciones sin establecer relaciones causales.
 
 # Materiales y métodos
 
@@ -97,23 +102,18 @@ knitr::opts_chunk$set(
   out.width = "\\linewidth", fig.align = "center",
   comment = NA
 )
+
 options(width = 80)
 ```
 
 ## Entorno de análisis y paquetes
 
-Aqui debemos explicar brevemente en que consisten las librerias utilizads, sin definir cada una de ellas. Envolvemos lo que nos ofrece cada una en un texto pero sin que este enumere las posibilidades de cada una de ellas.
+El análisis se desarrolla en R, utilizando bibliotecas vistas en clase
+que facilitan la obtención, transformación y exploración de datos, así
+como la representación gráfica de los resultados.
 
-```{r paquetes, results="hide", warning=FALSE, message=FALSE, echo = FALSE}
-
-# Especificamos las librerías necesarias en esta lista
-
-packages = c("tidyverse","knitr", "rvest", "dplyr","corrplot","tidyr","jsonlite")
-
-#use this function to check if each package is on the local machine
-#if a package is installed, it will be loaded
-#if any are not, the missing package(s) will be installed and loaded
-
+```{r paquetes, results="hide", warning=FALSE, message=FALSE}
+packages = c("tidyverse","knitr", "rvest", "corrplot","jsonlite")
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     install.packages(x, dependencies = TRUE,repos='https://cloud.r-project.org')
@@ -121,10 +121,10 @@ package.check <- lapply(packages, FUN = function(x) {
   library(x, character.only = TRUE)
 })
 
-#verify they are loaded
 search()
 ```
 
+<<<<<<< HEAD
 ```{r  echo = FALSE}
 url_UCI <- paste0(
   "https://archive.ics.uci.edu/",
@@ -181,21 +181,33 @@ dibujar_correlaciones <- function(matriz) {
 
 ```
 
+=======
+>>>>>>> 3f0f32ad6eddcc5787a32f56081c98d77acdc34e
 ## Obtención de datos
 
-Se utilizará el conjunto de datos *Drug Consumption (Quantified)* (<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>), obtenido del repositorio UCI Machine Learning. 
+El conjunto de datos utilizado corresponde a *Drug Consumption
+(Quantified)*
+(<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>),
+obtenido del repositorio UCI Machine Learning. Este recoge información
+de 1.885 participantes mediante encuestas que registran sus
+características sociodemográficas y psicológicas y el momento del último
+consumo de 19 sustancias, lo que permitirá explorar las relaciones entre
+los perfiles individuales y los distintos patrones de consumo.
 
-```{r descarga_datos, results="hide", warning=FALSE, message=FALSE}
+```{r descarga_datos, include = FALSE, warning=FALSE, message=FALSE}
 # Creamos la carpeta donde guardaremos los datos
 dir.create("data", showWarnings = FALSE)
+
 # Descargamos el archivo comprimido del dataset desde UCI.
 download.file(
-  url = url_UCI,
+  url = "https://archive.ics.uci.edu/static/public/373/drug+consumption+quantified.zip",
   destfile = "data/drug_consumption.zip",
   mode = "wb"
 )
+
 # Extraemos los archivos en la carpeta data.
 unzip("data/drug_consumption.zip", exdir = "data")
+
 # Importamos los datos: están separados por comas y no tienen cabecera.
 datos <- read.csv(
   "data/drug_consumption.data",
@@ -204,16 +216,7 @@ datos <- read.csv(
 )
 ```
 
-```{r}
-str(datos)
-```
-Este contiene 1.885 participantes y 32 variables, incluyendo características sociodemográficas, rasgos psicológicos y el historial de consumo de 19 sustancias. Asimismo, se incorporará una clasificación de las sustancias por familias farmacológicas, basada en *The Drugs Wheel (*<https://thedrugswheel.com>), con el propósito de ampliar las posibilidades de análisis.
 
-### Descarga del conjunto de datos
-
-
-
-### Metadatos y denominación de variables
 
 ```{r obtener_metadatos, results="hide", warning=FALSE, message=FALSE}
 metadatos <- jsonlite::fromJSON(
@@ -223,12 +226,130 @@ metadatos <- jsonlite::fromJSON(
 head(metadatos$data$variables)
 ```
 
+
+Como fuente complementaria, se emplea una clasificación farmacológica
+basada en [*The Drugs Wheel*](https://thedrugswheel.com/). Esta
+distingue siete familias que permiten agrupar las sustancias del
+conjunto original según sus características farmacológicas para ampliar
+el análisis de sus patrones de consumo.
+
+```{r descarga_clasificacion, include = FALSE}
+url <- "https://www.gov.scot/publications/understanding-patterns-use-motives-harms-new-psychoactive-substances-scotland/pages/3/"
+
+tables <- html_table(
+  html_elements(read_html(url), "table"),
+  header = TRUE
+)
+
+classification <- tables[[1]]
+```
+
+## Descripción y preprocesamiento de variables
+
+El nombre de las variables no es suficientemente representativo con los
+valores orirginales. Se necesita acceder a los metadatos para obtener
+los valores más descriptivos.
+
+```{r}
+colnames(datos)
+```
+
+Se asignan correctamente usando los metadatos.
+
+El conjunto de datos está formado por **32 variables**, que recogen
+información sobre las características sociodemográficas, psicológicas y
+los hábitos de consumo de sustancias de los participantes. Las variables
+sociodemográficas incluyen aspectos como la edad, el género, el nivel
+educativo, el país de procedencia y la etnia. Por su parte, las
+variables psicológicas permiten evaluar distintos rasgos de
+personalidad, como las cinco dimensiones del modelo Big Five, la
+impulsividad y la búsqueda de sensaciones.
+
+Entre las variables psicológicas se incluyen las cinco dimensiones del
+modelo **Big Five**, un modelo ampliamente utilizado en psicología para
+describir la personalidad humana a partir de cinco grandes rasgos:
+
+- **Neuroticismo (`nscore`):** mide la tendencia a experimentar
+  emociones negativas, como ansiedad, estrés o preocupación.
+- **Extraversión (`escore`):** refleja el grado de sociabilidad, energía
+  y tendencia a relacionarse con otras personas.
+- **Apertura a la experiencia (`oscore`):** evalúa la curiosidad, la
+  imaginación y la disposición a explorar nuevas ideas y experiencias.
+- **Amabilidad (`ascore`):** describe la tendencia a mostrar empatía,
+  cooperación y confianza hacia los demás.
+- **Responsabilidad (`cscore`):** mide aspectos relacionados con la
+  organización, la autodisciplina y el cumplimiento de objetivos.
+
+Cada dimensión se evalúa de forma independiente, de manera que una
+puntuación más elevada indica una mayor presencia del rasgo
+correspondiente. Estas variables permiten explorar posibles asociaciones
+entre las características de personalidad de los participantes y sus
+patrones de consumo de sustancias.
+
 ```{r nombres_variables, results="hide", warning=FALSE, message=FALSE}
 nombres <- metadatos$data$variables$name
 stopifnot(length(nombres) == ncol(datos))
 names(datos) <- nombres
 
 names(datos)
+```
+
+A partir de un resumen estadístico inicial, se observa que las variables
+sociodemográficas y psicométricas presentan valores numéricos decimales,
+tanto positivos como negativos. Esto se debe a que los datos han sido
+previamente codificados y transformados para facilitar su utilización en
+algoritmos de aprendizaje automático.
+
+Aunque estas transformaciones resultan útiles para el modelado,
+dificultan la interpretación directa de las variables. Por ello, antes
+de comenzar el análisis exploratorio, recuperaremos las categorías
+originales de las variables sociodemográficas y las puntuaciones del Big
+Five, con el objetivo de facilitar la visualización de los datos y la
+interpretación de los resultados.
+
+```{r}
+
+summary(datos[1:13])
+
+```
+
+Las variables relacionadas con el consumo de sustancias están
+codificadas mediante siete categorías ordinales, desde **CL0 hasta
+CL6**, que indican el tiempo transcurrido desde el último consumo de
+cada sustancia.
+
+- **CL0:** Nunca ha consumido la sustancia.
+
+- **CL1:** La consumió hace más de 10 años.
+
+- **CL2:** La consumió durante los últimos 10 años, pero no en el último
+  año.
+
+- **CL3:** La consumió durante el último año, pero no en el último mes.
+
+- **CL4:** La consumió durante el último mes, pero no en la última
+  semana.
+
+- **CL5:** La consumió durante la última semana, pero no en el último
+  día.
+
+- **CL6:** La consumió durante el último día.
+
+Esto permite entender los patrones de consumo de los participantes.
+
+```{r}
+sort(unique(datos$alcohol))
+```
+
+
+###Comprobación de datos faltantes
+
+Queremos comprobar que no tenemos datos faltantes en el dataset. Como
+podemos observar todas las instancias estan completas.
+
+```{r}
+colSums(is.na(datos))
+
 ```
 
 ## Preprocesamiento y tratamiento de variables
@@ -383,18 +504,6 @@ table(datos$ss)
 
 ### Clasificación farmacológica
 
-```{r descarga_clasificacion, results="hide", warning=FALSE, message=FALSE}
-url <- "https://www.gov.scot/publications/understanding-patterns-use-motives-harms-new-psychoactive-substances-scotland/pages/3/"
-
-tables <- html_table(
-  html_elements(read_html(url), "table"),
-  header = TRUE
-)
-
-classification <- tables[[1]]
-head(classification$Name)
-```
-
 ```{r familias_sustancias, results="hide", warning=FALSE, message=FALSE}
 families <- classification$Name
 families <- c(families, "Other", "Fake" )
@@ -440,7 +549,7 @@ datos_consumo_familias <- datos_consumo %>%
   summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
               else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 
-# Resumen reutilizable para edad, género, etnia o educación.
+Resumen reutilizable para edad, género, etnia o educación.
 resumir_consumo <- function(ds, perfil, categoria) {
   ds %>%
     filter(!is.na(.data[[perfil]])) %>%
