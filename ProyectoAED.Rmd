@@ -340,14 +340,20 @@ Por ello, se recuperarán las categorías sociodemográficas y las
 puntuaciones originales del modelo *Big Five*, además de realizar las
 transformaciones necesarias sobre las restantes variables psicológicas.
 
-### Comprobación de datos faltantes
+### Aunsencia de valores
 
-Queremos comprobar que no tenemos datos faltantes en el dataset. Como
-podemos observar todas las instancias estan completas.
+Antes de aplicar las transformaciones, comprobamos la integridad del conjunto de datos, identificando posibles valores ausentes y registros duplicados que pudieran afectar a los resultados del análisis.
+
+```{r comprobar_integridad, include=TRUE}
+# Valores ausentes
+sum(colSums(is.na(datos)))
+
+# Identificadores duplicados
+sum(duplicated(datos$id))
+```
 
 ```{r}
 colSums(is.na(datos))
-
 ```
 
 ## Preprocesamiento y tratamiento de variables
