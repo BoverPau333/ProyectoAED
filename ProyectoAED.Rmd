@@ -91,7 +91,7 @@ knitr::opts_chunk$set(
   size = "scriptsize", comment = NA
 )
 
-options(width = 120)
+options(width = 100)
 ```
 
 ## Entorno de análisis y paquetes
@@ -266,8 +266,7 @@ descargados, facilitando su interpretación y posterior procesamiento.
 ```{r nombres_variables, warning=FALSE, message=FALSE}
 nombres <- metadatos$data$variables$name
 stopifnot(length(nombres) == ncol(datos))
-names(datos) <- nombres
-
+names(datos) <- nombres #Modificamos el nombre de las columnas
 colnames(datos)
 ```
 
@@ -592,8 +591,7 @@ corresponden a errores o a perfiles extremos válidos, sin eliminarlos
 automáticamente.
 
 ```{r deteccion_outliers, warning=FALSE, message=FALSE}
-variables <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
-# Una fila por persona y una observación por puntuación.
+variables <- c(big_five, "impulsive", "ss") # Una fila por persona y una observación por puntuación.
 outliers <- datos_families %>% distinct(id, .keep_all = TRUE) %>%
   select(id, all_of(variables)) %>%
   pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
@@ -603,22 +601,20 @@ outliers <- datos_families %>% distinct(id, .keep_all = TRUE) %>%
          boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>% ungroup() %>%
   pivot_longer(cols = ends_with(c("_inf", "_sup")),names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>% mutate(atipico = valor < inf | valor > sup)
 
-# Número de outliers y límites de cada método.
-outliers %>% group_by(variable, metodo) %>%
-  summarise(n_outliers = sum(atipico), inferior = first(inf),superior = first(sup), .groups = "drop")
+outliers %>%
+  group_by(variable, metodo) %>%
+  summarise(n_outliers = sum(atipico, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = metodo, values_from = n_outliers) %>%
+  knitr::kable(col.names = c("Variable", "Boxplot", "Hampel", "Sigma"),
+               caption = "Número de valores atípicos por variable y método.")
 ```
 
 ```{r fig_densidad_cscore, fig.cap="Distribución de cscore y umbrales de detección. Los puntos se desplazan ligeramente en horizontal para reducir el solapamiento."}
-puntos <- outliers %>%
-  filter(variable == "cscore") %>%
-  mutate(grupo = case_when(
-    id %in% personas_semeron$id ~ "Declara Semeron",
-    atipico ~ "Atípico", TRUE ~ "Resto"
-  )) %>%
-  arrange(grupo == "Declara Semeron")
+puntos <- outliers %>% filter(variable == "cscore") %>% mutate(grupo = case_when(
+    id %in% personas_semeron$id ~ "Declara Semeron", atipico ~ "Atípico", TRUE ~ "Resto" 
+    )) %>% arrange(grupo == "Declara Semeron")
 
 limites <- puntos %>% distinct(metodo, inf, sup)
-
 valores <- puntos %>% distinct(id, valor)
 d <- density(valores$valor, na.rm = TRUE)
 curva <- tibble(valor = d$x, densidad = d$y)
@@ -647,18 +643,6 @@ admisibles y representan perfiles poco frecuentes. Por ello, se
 conservaron estas observaciones, ya que su eliminación podría excluir
 variabilidad relevante para el estudio.
 
-```{r ejemplo_atipico, warning=FALSE, message=FALSE}
-caso <- outliers %>%
-  filter(variable == "cscore", atipico) %>%
-  distinct(id, variable, valor) %>%
-  slice_head(n = 1)
-
-datos_families %>%
-  filter(id == caso$id) %>%
-  select(id, age, gender, education, cscore) %>%
-  distinct()
-```
-
 ## Correlaciones entre personalidad y consumo
 
 ```{r correlaciones_sustancias, warning=FALSE, message=FALSE}
@@ -685,25 +669,6 @@ sustancias <- setdiff(colnames(correlaciones), rasgos)
 matriz_sustancias <- correlaciones[rasgos, sustancias, drop = FALSE]
 
 dibujar_correlaciones(matriz_sustancias)
-```
-
-```{r fig_corr_familias, fig.width=7, fig.height=4.5, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y consumo reciente de alguna sustancia de cada familia."}
-consumos_familias <- datos_consumo_familias %>%
-  select(id, family, reciente) %>%
-  mutate(reciente = as.integer(reciente)) %>%
-  pivot_wider(names_from = family, values_from = reciente)
-
-personalidad <- datos_families %>% select(id, all_of(rasgos)) %>% distinct()
-
-datos_cor_familias <- personalidad %>%
-  left_join(consumos_familias, by = "id") %>% select(-id)
-
-correlaciones_familias <- cor(datos_cor_familias, method = "spearman",
-                              use = "complete.obs")
-familias <- setdiff(colnames(correlaciones_familias), rasgos)
-matriz_familias <- correlaciones_familias[rasgos, familias, drop = FALSE]
-
-dibujar_correlaciones(matriz_familias)
 ```
 
 ## Descripción de la muestra y preparación de comparaciones
@@ -738,15 +703,21 @@ consumo_etnia <- resumir_consumo(datos_consumo, "ethnicity", "substance")
 
 ### Edad
 
-```{r fig_consumo_edad, fig.width=9, fig.height=7.5, fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
-edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
-paneles <- names(col_paneles)
+```{r, echo=FALSE}
 etiquetas_familias <- c(
   Cannabinoids = "Cannabinoides", Depressants = "Depresores",
   Dissociatives = "Disociativos", Empathogens = "Empatógenos",
   Opioids = "Opioides", Psychedelics = "Psicodélicos",
   Stimulants = "Estimulantes", nicotine = "nicotine", alcohol = "alcohol"
 )
+
+edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
+
+paneles <- names(col_paneles)
+```
+
+
+```{r fig_consumo_edad, fig.width=9, fig.height=7.5, fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
 
 consumo_adicional <- resumir_consumo(
   datos_consumo %>% filter(substance %in% c("nicotine", "alcohol")),
@@ -833,19 +804,13 @@ generalizar directamente las cifras a toda la población.
 
 ### Género
 
-```{r fig_consumo_genero, fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
-grafico_genero <- consumo_genero %>%
-  filter(!is.na(porcentaje)) %>%
-  ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) +
-  geom_line(aes(group = substance), color = "grey75",
-            linewidth = 1, orientation = "y") +
-  geom_point(aes(color = gender), size = 2.8) +
-  scale_color_manual(values = col_genero) +
-  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 25),
-                     labels = porcentaje_eje) +
-  labs(x = "Consumo en los últimos 12 meses (%)", y = NULL) +
-  theme(panel.grid.major.y = element_line(linetype = "dotted"))
-
+```{r fig_consumo_genero,fig.with = 3, fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
+grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
+  ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
+  geom_line(aes(group = substance), color = "grey75", linewidth = 1, orientation = "y")+
+  geom_point(aes(color = gender), size = 2.8) + scale_color_manual(values = col_genero)+
+  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 25), labels = porcentaje_eje)+
+  labs(x = "Consumo reciente (%)", y = NULL) + theme(panel.grid.major.y = element_line(linetype = "dotted"))
 grafico_genero
 ```
 
@@ -941,19 +906,12 @@ consumidores de dos o tres (`2-3`), y consumidores de cuatro o más
 la muestra, respectivamente.
 
 ```{r grupos_policonsumo, warning=FALSE, message=FALSE}
-policonsumo <- policonsumo %>%
-  mutate(
-    grupo = case_when(
-      n_sustancias == 0 ~ "0",
-      n_sustancias == 1 ~ "1",
-      n_sustancias == 2 | n_sustancias == 3 ~ "2-3",
-      n_sustancias >= 4 ~ "4+"
-    ),
-    grupo = factor(grupo, levels = c("0", "1", "2-3", "4+"))
-  )
+policonsumo <- policonsumo %>% mutate( grupo = case_when(
+      n_sustancias == 0 ~ "0",n_sustancias == 1 ~ "1",
+      n_sustancias == 2 | n_sustancias == 3 ~ "2-3", n_sustancias >= 4 ~ "4+" ),
+    grupo = factor(grupo, levels = c("0", "1", "2-3", "4+")))
 
 table(policonsumo$grupo) 
-round(prop.table(table(policonsumo$grupo)) * 100, 2)
 ```
 
 ```{r fig_psicometria_policonsumo, fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
