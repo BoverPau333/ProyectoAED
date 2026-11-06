@@ -227,12 +227,7 @@ el análisis de sus patrones de consumo.
 
 ```{r descarga_clasificacion, include = FALSE}
 url <- "https://www.gov.scot/publications/understanding-patterns-use-motives-harms-new-psychoactive-substances-scotland/pages/3/"
-
-tables <- html_table(
-  html_elements(read_html(url), "table"),
-  header = TRUE
-)
-
+tables <- html_table(html_elements(read_html(url), "table"), header = TRUE)
 classification <- tables[[1]]
 ```
 
@@ -474,10 +469,7 @@ families <- c(families, "Other", "Fake" )
 
 uci_classification <- data.frame(
   substance = substances,
-  family = families[c(
-    2, 7, 7, 2, 7, 1, 7, 7, 7, 4,
-    5, 3, 8, 6, 5, 6, 7, 9, 2
-  )]
+  family = families[c(2, 7, 7, 2, 7, 1, 7, 7, 7, 4, 5, 3, 8, 6, 5, 6, 7, 9, 2)]
 )
 
 table(uci_classification$family)
@@ -502,8 +494,7 @@ familias.
 datos_families <- datos %>%
   pivot_longer(
     cols = all_of(uci_classification$substance),
-    names_to = "substance",
-    values_to = "consumption"
+    names_to = "substance", values_to = "consumption"
   ) %>%
   left_join(uci_classification, by = "substance")
 ```
@@ -542,10 +533,7 @@ consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "famil
 
 # Resultados
 
-Las figuras y tablas de esta sección proceden de los cálculos
-reproducibles del documento. Salvo que se indique lo contrario, el
-consumo reciente comprende las categorías *Last year*, *Last month*,
-*Last week* y *Last day*.
+## Caracterización univariante de la muestra
 
 ## Valores atípicos y controles de calidad
 
@@ -829,14 +817,33 @@ puntos porcentuales pueden representar una proporción considerable.
 Estos resultados describen diferencias en la muestra y no permiten
 atribuirlas exclusivamente al género.
 
-
 ## Consumo reciente según nivel educativo
 
-Como se puede observar en la Figura \ref{fig:consumo_educacion}, existe una tendencia general al aumento del consumo de sustancias en los niveles educativos intermedios, alcanzándose los porcentajes más elevados en la categoría *Some college*. A partir de este punto, se aprecia una disminución considerable del consumo entre las personas con titulaciones superiores. Además, los cannabinoides destacan como las sustancias más consumidas en todos los niveles educativos, mientras que los disociativos presentan los porcentajes más bajos.
+Como se puede observar en la Figura \ref{fig:consumo_educacion}, existe
+una tendencia general al aumento del consumo de sustancias en los
+niveles educativos intermedios, alcanzándose los porcentajes más
+elevados en la categoría *Some college*. A partir de este punto, se
+aprecia una disminución considerable del consumo entre las personas con
+titulaciones superiores. Además, los cannabinoides destacan como las
+sustancias más consumidas en todos los niveles educativos, mientras que
+los disociativos presentan los porcentajes más bajos.
 
-Estos resultados sugieren que un mayor nivel educativo podría estar asociado con un menor consumo de sustancias. Sin embargo, es importante considerar la posible influencia de la edad de los participantes. Aunque todos son mayores de edad, las categorías educativas no representan su edad actual: las categorías de 16, 17 y 18 años indican la edad a la que finalizaron o abandonaron sus estudios, mientras que *Some college* agrupa a personas que han cursado estudios universitarios sin haber obtenido necesariamente un título, incluyendo tanto a estudiantes actuales como a personas que interrumpieron su formación. Por otro lado, quienes poseen titulaciones superiores podrían pertenecer, en promedio, a grupos de mayor edad, lo que ayudaría a explicar parte del descenso observado en el consumo.
+Estos resultados sugieren que un mayor nivel educativo podría estar
+asociado con un menor consumo de sustancias. Sin embargo, es importante
+considerar la posible influencia de la edad de los participantes. Aunque
+todos son mayores de edad, las categorías educativas no representan su
+edad actual: las categorías de 16, 17 y 18 años indican la edad a la que
+finalizaron o abandonaron sus estudios, mientras que *Some college*
+agrupa a personas que han cursado estudios universitarios sin haber
+obtenido necesariamente un título, incluyendo tanto a estudiantes
+actuales como a personas que interrumpieron su formación. Por otro lado,
+quienes poseen titulaciones superiores podrían pertenecer, en promedio,
+a grupos de mayor edad, lo que ayudaría a explicar parte del descenso
+observado en el consumo.
 
-Por tanto, aunque los datos muestran una asociación entre el nivel educativo y el consumo de sustancias, no se puede afirmar que una mayor formación académica implique directamente un menor consumo.
+Por tanto, aunque los datos muestran una asociación entre el nivel
+educativo y el consumo de sustancias, no se puede afirmar que una mayor
+formación académica implique directamente un menor consumo.
 
 ```{r  include=FALSE}
 
@@ -862,7 +869,6 @@ grafico_educacion <- ggplot(
 
 grafico_educacion
 ```
-
 
 ## Impulsividad, búsqueda de sensaciones y policonsumo
 
