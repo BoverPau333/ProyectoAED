@@ -322,16 +322,15 @@ valores ausentes y registros duplicados que pudieran afectar a los
 resultados del análisis.
 
 ```{r comprobar_integridad, include = TRUE}
-colSums(is.na(datos))
-sum(duplicated(datos$id)) 
+c(
+  ausentes = sum(is.na(datos)),
+  ids_duplicados = sum(duplicated(datos$id)),
+  filas_duplicadas = sum(duplicated(select(datos, -id)))
+)
 ```
 
-Al no presentar ninguna de estas anomalías, no es necesario realizar
-operaciones de imputación ni eliminación de registros. No obstante, en
-los nombres de las variables mostrados durante la comprobación se
-observa una errata en la denominación de la impulsividad, registrada
-como `impuslive`.Por tanto, se corrige a `impulsive` para facilitar su
-identificación y posterior tratamiento.
+Al no presentar ninguna de estas anomalías, no es necesario imputar datos ni eliminar registros. 
+Asimismo, se corrige la errata en el nombre de la variable de impulsividad, registrada en los metadatos como `impuslive`, renombrándola a `impulsive.`
 
 ```{r corregir_impulsive, results="hide", warning=FALSE, message=FALSE}
 datos <- rename(datos, impulsive = impuslive)
@@ -340,8 +339,7 @@ datos <- rename(datos, impulsive = impuslive)
 ### Decodificación de variables sociodemográficas
 
 Para facilitar la interpretación de las variables sociodemográficas, se
-sustituyen sus códigos numéricos por las categorías originales recogidas
-en la documentación de UCI mediante la función `factor()`.
+sustituyen sus códigos numéricos por las las categorías documentadas por UCI mediante `factor()`, conservando el orden de edad y nivel educativo
 
 ```{r decodificacion_sociodemografica, results="hide", warning=FALSE, message=FALSE}
 datos <- datos %>%
@@ -369,8 +367,8 @@ datos <- datos %>%
 
 ### Transformación de variables psicológicas
 
-Las variables psicológicas requieren recuperar las puntuaciones
-originales del *Big Five* y normalizar las escalas de impulsividad
+La interpretación de las variables psicológicas puede facilitarse recuperando las puntuaciones
+originales del *Big Five* y normalizando las escalas de impulsividad
 (BIS-11) y búsqueda de sensaciones (ImpSS).
 
 Para el *Big Five*, se relacionan los valores transformados, ordenados
@@ -381,11 +379,9 @@ exactamente.
 ```{r recuperacion_big_five, results="hide", warning=FALSE, message=FALSE}
 big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
 
-# Puntuaciones originales publicadas por UCI teniendo en cuenta los faltantes
+# Puntuaciones originales publicadas por UCI
 scores <- list( nscore = 12:60, escore = c(16, 18:56, 58:59),
   oscore = c(24, 26, 28:60), ascore = c(12, 16, 18, 23:60), cscore = c(17, 19:57, 59))
-
-# recuperar las puntuaciones originales sin transformación lineal, asi obtenemos exactamente los valores originales
 
 for (v in big_five) {
   datos[[v]] <- scores[[v]][
@@ -399,10 +395,7 @@ normalizan mediante una transformación **MinMax**, situando sus valores
 en el intervalo [0, 1] para facilitar su comparación.
 
 ```{r normalizacion_impulsividad_ss, results="hide", warning=FALSE, message=FALSE}
-
 datos <- datos %>% mutate(across(c(impulsive, ss), rescale))
-
-summary(datos[c("impulsive", "ss")])
 ```
 
 ### Decodificación del consumo
@@ -410,8 +403,7 @@ summary(datos[c("impulsive", "ss")])
 Aunque los códigos `CL0`–`CL6` permiten identificar el momento del
 último consumo, su significado no queda claro sin consultar las
 equivalencias anteriores. Por ello, se sustituyen
-mediante `factor()` por etiquetas temporales más descriptivas,
-conservando su orden para facilitar la interpretación de los datos.
+mediante `factor()` por etiquetas temporales más descriptivas y ordenadas.
 
 ```{r categorias_consumo, results="hide", warning=FALSE, message=FALSE}
 # Identificamos las columnas correspondientes a las sustancias
@@ -432,13 +424,9 @@ table(datos$alcohol)
 ### Clasificación farmacológica de las sustancias
 
 A partir de las siete familias de *The Drugs Wheel*, se establece una
-correspondencia con las 19 sustancias del conjunto UCI. Dado que algunas
-no pueden asignarse directamente a estas familias, se incorporan dos
-categorías adicionales: 
-
-- `Other`, para `legalh`
-
-- `Fake`, para `semer`
+correspondencia con las sustancias del conjunto UCI. Dado que algunas
+no pueden asignarse directamente a estas familias, se incorpora la categoría  
+`Other`, para `legalh`, y `Fake`, para `semer`.
 
 ```{r familias_sustancias, include = TRUE, warning=FALSE, message=FALSE}
 families <- classification$Name
@@ -446,20 +434,14 @@ families <- c(families, "Other", "Fake" )
 
 uci_classification <- data.frame(
   substance = substances,
-  family = families[c(2, 7, 7, 2, 7, 1, 7, 7, 7, 4, 5, 3, 8, 6, 5, 6, 7, 9, 2)]
+  family = families[c(2, 7, 2, 2, 7, 1, 7, 7, 7, 4, 5, 3, 8, 6, 5, 6, 7, 9, 2)]
 )
-
-table(uci_classification$family)
 ```
 
 ### Reestructuración de los datos
 
-Hasta ahora, el conjunto de datos presenta un formato ancho, con una
-columna de consumo por sustancia. Para facilitar el estudio de los
-patrones de consumo y su relación con las familias farmacológicas, se
-utiliza `pivot_longer()` para reorganizar los datos en formato *tidy*,
-agrupando las variables de consumo en dos columnas: la sustancia y el
-momento de su último consumo.
+Hasta ahora, el conjunto de datos presenta un formato ancho, con una columna de consumo por sustancia. Para facilitar el análisis por sustancias y familias farmacológicas, se utiliza pivot_longer() para reorganizarlo en formato **tidy**, agrupando las variables de consumo en dos columnas: la sustancia y el
+momento de su último consumo. Así, cada fila corresponde a un participante y una sustancia, conservándose las características sociodemográficas y psicológicas del participante.
 
 Finalmente, mediante `left_join()`, se incorpora la familia
 farmacológica correspondiente a cada sustancia, completando así el
