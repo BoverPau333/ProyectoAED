@@ -11,7 +11,7 @@ author:
 affiliation:
   - num: 1
     address: |
-      Universitat de València, Grado en Ciencia de Datos,
+      Universitat de València, Máster en Ciencia de Datos,
       València, España.
 correspondence: |
   bofepau@alumni.uv.es (Pau Bover Femenias);
@@ -76,13 +76,13 @@ header-includes:
 
 El consumo de sustancias presenta patrones diversos, tanto por el tipo
 de droga como por la combinación de varias de ellas. Su estudio
-permitirá identificar diferencias entre grupos de población y explorar
+permite identificar diferencias entre grupos de población y explorar
 qué características individuales pueden estar asociadas con estos
 comportamientos.
 
 El objetivo de este trabajo es analizar cómo varía el consumo según el
 perfil de los participantes, prestando especial atención a la edad, el
-género, la etnia y el nivel educativo. Asimismo, se estudiará la
+género, la etnia y el nivel educativo. Asimismo, se estudia la
 relación entre determinados rasgos psicológicos y el policonsumo,
 buscando identificar asociaciones sin establecer relaciones causales.
 
@@ -114,10 +114,9 @@ package.check <- lapply(packages, FUN = function(x) {
   library(x, character.only = TRUE)
 })
 
-search()
 ```
 
-```{r  echo = FALSE}
+```{r fuente_uci, include=FALSE}
 url_UCI <- "https://archive.ics.uci.edu/static/public/373/drug+consumption+quantified.zip"
 
 ```
@@ -204,12 +203,7 @@ tabla_tex <- function(datos, ...) {
 ## Obtención de datos
 
 El conjunto de datos utilizado corresponde a [Drug Consumption
-(Quantified)](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified),
-obtenido del repositorio UCI Machine Learning. Este recoge información
-de 1.885 participantes mediante encuestas que registran sus
-características sociodemográficas y psicológicas y el momento del último
-consumo de 19 sustancias, lo que permitirá explorar las relaciones entre
-los perfiles individuales y los distintos patrones de consumo.
+(Quantified)](<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>), obtenido del repositorio UCI Machine Learning. Los datos se descargan en un archivo comprimido y se importan desde un fichero sin cabecera. Asimismo, se obtienen los metadatos para identificar las variables.
 
 ```{r descarga_datos, warning=FALSE, message=FALSE, results="hide"}
 dir.create("data", showWarnings = FALSE)
@@ -242,14 +236,11 @@ Una vez obtenidas las fuentes de datos, se examina su estructura y
 contenido para identificar las transformaciones necesarias antes del
 análisis exploratorio y obtener un conjunto de datos consistente.
 
-El conjunto de datos está formado por **32 variables**, que recogen
-información sobre las características sociodemográficas, psicológicas y
-los hábitos de consumo de sustancias de los participantes.
-
-```{r propiedades_dataset, warning=FALSE, message=FALSE}
+```{r}
 dim(datos)
-colnames(datos)[1:16]
 ```
+
+El conjunto contiene **1.885 observaciones** y **32 columnas**, una de las cuales corresponde al identificador de cada registro
 
 Dado que el fichero original carece de cabeceras identificativas, se
 recuperan los nombres reales de las variables mediante los metadatos ya
@@ -262,13 +253,10 @@ names(datos) <- nombres #Modificamos el nombre de las columnas
 colnames(datos)
 ```
 
-Entre estas, se identifican variables **sociodemográficas**, que
-incluyen aspectos como la edad, el género, el nivel educativo y la
-etnia, variables **psicológicas**, que permitirán evaluar distintos
-rasgos de personalidad y su influencia en el consumo, y variables **de
-consumo**, que recoge 19 sustancias distintas donde cada una dispone de
-una columna propia que registra el tiempo transcurrido desde su último
-consumo.
+Además del `id`, se distinguen cinco variables **sociodemográficas** (edad, género, nivel educativo,
+país de residencia y etnia), siete variables **psicológicas**, que permiten explorar
+la asociación entre características personales y consumo, y diecinueve variables de **consumo**,
+que registran la categoría temporal del último consumo declarado de cada sustancia.
 
 Entre las variables psicológicas se encuentran la impulsividad, la
 búsqueda de sensaciones y las cinco dimensiones del modelo *Big Five*,
@@ -290,11 +278,12 @@ Por último, las variables de consumo corresponden a distintas
 sustancias, identificadas mediante su nombre o abreviatura. Entre las
 denominaciones menos evidentes se
 encuentran `meth` (metadona), `legalh` (*legal highs*), `vsa` (abuso de
-sustancias volátiles) y `semer`, una sustancia ficticia incluida en el
+sustancias volátiles) y `semer` (Semeron), una sustancia ficticia incluida en el
 cuestionario original.
 
 Estas variables se encuentran codificadas mediante siete categorías
-ordinales (`CL0`–`CL6`), que indican el tiempo transcurrido desde el
+ordinales (`CL0`–`CL6`), que indican si se ha consumido la sustancia y,
+en caso afirmativo, el intervalo temporal correspondiente al
 último consumo de cada sustancia, tal como se recoge en la Tabla
 \ref{tab:codificacion_consumo}.
 
@@ -317,24 +306,17 @@ CL6 & En el último día \\
 \label{tab:codificacion_consumo}
 \end{table}
 
-Identificadas las variables, y obviando las asociadas al consumo, se
-examinan sus valores originales mediante un resumen estadístico para
-determinar qué transformaciones son necesarias para facilitar su
-interpretación.
+Identificadas las variables, se examinan los valores originales para algunas de ellas.
 
-```{r}
-summary(datos[2:10])
+```{r estructura_variables}
+str(datos[c("age", "gender", "education", "ethnicity", "cscore", "amyl")])
 ```
 
-Se observa que las variables sociodemográficas están representadas
-mediante códigos numéricos en lugar de sus categorías originales,
-mientras que las variables psicológicas presentan puntuaciones
-transformadas respecto a las escalas de los cuestionarios. Estas
-transformaciones facilitan su utilización en algoritmos de aprendizaje
-automático, pero dificultan su interpretación directa.
-
-Por ello, se recuperarán las categorías sociodemográficas y las
-puntuaciones originales del modelo *Big Five*, además de realizar las
+Entre estos, se distingue que las variables sociodemográficas y psicológicas están codificadas numéricamente,
+mientras que la variable de consumo utiliza códigos de texto. Según la documentación de UCI,
+los valores sociodemográficos representan categorías y las puntuaciones psicológicas han sido
+transformadas respecto a sus escalas originales, por lo que, para facilitar su interpretación,
+se recuperarán las categorías sociodemográficas y las puntuaciones originales del *Big Five*, además de realizar las
 transformaciones necesarias sobre las restantes variables psicológicas.
 
 ### Integridad del conjunto de datos
