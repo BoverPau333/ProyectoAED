@@ -101,7 +101,7 @@ que facilitan la obtención, transformación y exploración de datos, así
 como la representación gráfica de los resultados.
 
 ```{r paquetes, results="hide", warning=FALSE, message=FALSE,include=FALSE}
-packages = c("tidyverse","knitr", "rvest", "corrplot","jsonlite","ggplot2")
+packages = c("tidyverse","knitr", "rvest", "corrplot","jsonlite","ggplot2", "scales")
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     install.packages(x, dependencies = TRUE,repos='https://cloud.r-project.org')
@@ -199,7 +199,7 @@ tabla_tex <- function(datos, ...) {
 ## Obtención de datos
 
 El conjunto de datos utilizado corresponde a [Drug Consumption
-(Quantified)](<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>),
+(Quantified)](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified),
 obtenido del repositorio UCI Machine Learning. Este recoge información
 de 1.885 participantes mediante encuestas que registran sus
 características sociodemográficas y psicológicas y el momento del último
@@ -220,10 +220,10 @@ metadatos <- jsonlite::fromJSON("https://archive.ics.uci.edu/api/dataset?id=373"
 ```
 
 Como fuente complementaria, se emplea una clasificación farmacológica
-basada en [The Drugs Wheel](https://thedrugswheel.com/). Esta
-distingue siete familias que permiten agrupar las sustancias del
-conjunto original según sus características farmacológicas para ampliar
-el análisis de sus patrones de consumo.
+basada en [The Drugs Wheel](https://thedrugswheel.com/). Esta distingue
+siete familias que permiten agrupar las sustancias del conjunto original
+según sus características farmacológicas para ampliar el análisis de sus
+patrones de consumo.
 
 ```{r descarga_clasificacion, include = FALSE}
 url <- "https://www.gov.scot/publications/understanding-patterns-use-motives-harms-new-psychoactive-substances-scotland/pages/3/"
@@ -348,8 +348,8 @@ Al no presentar ninguna de estas anomalías, no es necesario realizar
 operaciones de imputación ni eliminación de registros. No obstante, en
 los nombres de las variables mostrados durante la comprobación se
 observa una errata en la denominación de la impulsividad, registrada
-como `impuslive`.Por tanto, se corrige a `impulsive` para facilitar su identificación y
-posterior tratamiento.
+como `impuslive`.Por tanto, se corrige a `impulsive` para facilitar su
+identificación y posterior tratamiento.
 
 ```{r corregir_impulsive, results="hide", warning=FALSE, message=FALSE}
 datos <- rename(datos, impulsive = impuslive)
@@ -418,12 +418,7 @@ en el intervalo [0, 1] para facilitar su comparación.
 
 ```{r normalizacion_impulsividad_ss, results="hide", warning=FALSE, message=FALSE}
 
-normalizar <- function(x) {
-  limites <- range(x, na.rm = TRUE)
-  if (diff(limites) == 0) return(rep(NA_real_, length(x)))
-  (x - limites[1]) / diff(limites)}
-
-datos <- datos %>% mutate(across(c(impulsive, ss), normalizar))
+datos <- datos %>% mutate(across(c(impulsive, ss), rescale))
 
 summary(datos[c("impulsive", "ss")])
 ```
@@ -583,7 +578,6 @@ outliers %>% group_by(variable, metodo) %>%
   tabla_tex(col.names = c("Variable", "Boxplot", "Hampel", "Sigma"))
 ```
 
-
 ```{r include=FALSE}
 formato_densidad <- function(colores) {
   list(
@@ -593,7 +587,6 @@ formato_densidad <- function(colores) {
   )
 }
 ```
-
 
 ```{r fig_densidad_cscore, fig.cap="Distribución de cscore y umbrales de detección. Los puntos se desplazan ligeramente en horizontal para reducir el solapamiento."}
 puntos <- outliers %>% filter(variable == "cscore") %>% mutate(grupo = case_when(
@@ -861,7 +854,6 @@ formato_educacion <- function(colores) {
 }
 ```
 
-
 ```{r fig_consumo_educacion, fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia.\\label{fig:consumo_educacion}"}
 grafico_educacion <- ggplot(
   consumo_educacion, aes(education, porcentaje, color = family, group = family)) +
@@ -911,7 +903,6 @@ policonsumo <- policonsumo %>% mutate(grupo = cut(n_sustancias,
 table(policonsumo$grupo) 
 ```
 
-
 ```{r include=F}
 formato_psicometria <- function(colores, etiquetas) {
   list(
@@ -952,73 +943,6 @@ Por el contrario, la **búsqueda de sensaciones** muestra una tendencia
 positiva y progresiva tanto en las medianas como los cuartiles,
 diferencia que también se observa en las correlaciones de Spearman,
 siendo mayor que la asociación de la impulsividad.
-
-Para profundizar en estas diferencias, dividimos los participantes que
-han consumido al menos una sustancia en dos niveles (`High` y `Low`),
-utilizando la mediana de cada rasgo como referencia.
-
-```{r comparacion_policonsumo, warning=FALSE, message=FALSE}
-comparacion <- policonsumo %>% filter(n_sustancias >= 1) %>%
-  pivot_longer( cols = c(impulsive, ss), names_to = "rasgo", values_to = "valor" ) %>%
-  group_by(rasgo) %>% mutate(nivel = if_else(valor > median(valor), "High", "Low"),
-  multiple = n_sustancias >= 2) %>% group_by(rasgo, nivel) %>%
-  summarise( n = n(), porcentaje_multiple = round(mean(multiple) * 100, 2))
-
-comparacion
-```
-
-Los porcentajes obtenidos muestran que el uso de varias sustancias es
-**más frecuente** entre quienes cuentan con **puntuaciones elevadas en
-ambas características**, aunque esta diferencia es mayor para la
-búsqueda de sensaciones.
-
-### Policonsumo por etnia
-
-```{r, include=FALSE}
-formato_etnia <- function(colores, rotulos) {
-  list(
-    scale_y_discrete(labels = setNames(rotulos$rotulo, rotulos$ethnicity)),
-    scale_fill_manual(values = colores, drop = FALSE, name = "Número de sustancias"),
-    scale_x_continuous(breaks = seq(0, 100, 25), labels = porcentaje_eje,
-                       expand = expansion(mult = c(0, 0.01))),
-    labs(x = "Porcentaje de participantes", y = NULL),
-    theme(panel.grid.major.y = element_blank(),
-          legend.title = element_text(size = 9))
-  )
-}
-```
-
-
-```{r fig_policonsumo_etnia, fig.cap="Distribución del policonsumo por etnia durante los últimos doce meses. Se excluyen alcohol, cafeína, chocolate y Semeron. Las etiquetas del eje indican el tamaño de cada grupo."}
-orden_etnias <- perfil_personas %>%
-  filter(!is.na(ethnicity), ethnicity != "Black-Asian") %>%
-  count(ethnicity, sort = TRUE) %>% pull(ethnicity) %>% as.character()
-
-policonsumo_etnia <- policonsumo %>%
-  left_join(perfil_personas %>% select(id, ethnicity), by = "id") %>%
-  filter(ethnicity %in% orden_etnias, !is.na(grupo)) %>%
-  count(ethnicity, grupo, .drop = FALSE) %>%
-  group_by(ethnicity) %>%
-  mutate(total = sum(n), porcentaje = 100 * n / total) %>%
-  ungroup() %>%
-  filter(total > 0) %>%
-  mutate(ethnicity = factor(ethnicity, levels = rev(orden_etnias)))
-
-rotulos_etnia <- policonsumo_etnia %>%
-  distinct(ethnicity, total) %>%
-  mutate(rotulo = paste0(ethnicity, " (n = ", total, ")"))
-
-grafico_etnia_policonsumo <- ggplot(policonsumo_etnia, aes(porcentaje, ethnicity, fill = grupo)) +
-  geom_col(width = 0.65, position = position_stack(reverse = TRUE)) +
-  geom_text(aes(label = if_else(porcentaje >= 7, sprintf("%.0f%%", porcentaje), ""),
-                color = grupo),
-            position = position_stack(vjust = 0.5, reverse = TRUE),
-            fontface = "bold", size = 3) +
-  scale_color_manual(values = c("0" = "grey20", "1" = "grey40","2-3" = "white", "4+" = "white"), guide = "none") +
-  formato_etnia(col_consumo, rotulos_etnia)
-
-grafico_etnia_policonsumo
-```
 
 # Discusión
 
