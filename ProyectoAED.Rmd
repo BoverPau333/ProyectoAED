@@ -7,18 +7,23 @@ author:
     affil: "1"
   - name: "Marino Fernandez Perez"
     affil: "1"
+
 affiliation:
   - num: 1
     address: |
       Universitat de València, Grado en Ciencia de Datos,
       València, España.
+correspondence: |
+  bofepau@alumni.uv.es (Pau Bover Femenias);
+  franoca2@alumni.uv.es (Francesc Oliver Catany);
+  ferpema2@alumni.uv.es (Marino Fernandez Perez)
+
 authorcitation: |
   Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
 output:
   rticles::mdpi_article:
      extra_dependencies: ["longtable", "xurl", "fvextra"]
   pdf_document: default
-journal: notspecified
 type: article
 status: submit
 simplesummary: |
