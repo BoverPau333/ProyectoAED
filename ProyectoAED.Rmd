@@ -75,16 +75,16 @@ header-includes:
 # Introducción
 
 El consumo de sustancias presenta patrones diversos, tanto por el tipo
-de droga como por la combinación de varias de ellas. Su estudio
-permite identificar diferencias entre grupos de población y explorar
-qué características individuales pueden estar asociadas con estos
+de droga como por la combinación de varias de ellas. Su estudio permite
+identificar diferencias entre grupos de población y explorar qué
+características individuales pueden estar asociadas con estos
 comportamientos.
 
 El objetivo de este trabajo es analizar cómo varía el consumo según el
 perfil de los participantes, prestando especial atención a la edad, el
-género, la etnia y el nivel educativo. Asimismo, se estudia la
-relación entre determinados rasgos psicológicos y el policonsumo,
-buscando identificar asociaciones sin establecer relaciones causales.
+género, la etnia y el nivel educativo. Asimismo, se estudia la relación
+entre determinados rasgos psicológicos y el policonsumo, buscando
+identificar asociaciones sin establecer relaciones causales.
 
 # Materiales y métodos
 
@@ -203,7 +203,10 @@ tabla_tex <- function(datos, ...) {
 ## Obtención de datos
 
 El conjunto de datos utilizado corresponde a [Drug Consumption
-(Quantified)](<https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified>), obtenido del repositorio UCI Machine Learning. Los datos se descargan en un archivo comprimido y se importan desde un fichero sin cabecera. Asimismo, se obtienen los metadatos para identificar las variables.
+(Quantified)](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified),
+obtenido del repositorio UCI Machine Learning. Los datos se descargan en
+un archivo comprimido y se importan desde un fichero sin cabecera.
+Asimismo, se obtienen los metadatos para identificar las variables.
 
 ```{r descarga_datos, warning=FALSE, message=FALSE, results="hide"}
 dir.create("data", showWarnings = FALSE)
@@ -240,7 +243,8 @@ análisis exploratorio y obtener un conjunto de datos consistente.
 dim(datos)
 ```
 
-El conjunto contiene **1.885 observaciones** y **32 columnas**, una de las cuales corresponde al identificador de cada registro
+El conjunto contiene **1.885 observaciones** y **32 columnas**, una de
+las cuales corresponde al identificador de cada registro
 
 Dado que el fichero original carece de cabeceras identificativas, se
 recuperan los nombres reales de las variables mediante los metadatos ya
@@ -253,10 +257,12 @@ names(datos) <- nombres #Modificamos el nombre de las columnas
 colnames(datos)
 ```
 
-Además del `id`, se distinguen cinco variables **sociodemográficas** (edad, género, nivel educativo,
-país de residencia y etnia), siete variables **psicológicas**, que permiten explorar
-la asociación entre características personales y consumo, y diecinueve variables de **consumo**,
-que registran la categoría temporal del último consumo declarado de cada sustancia.
+Además del `id`, se distinguen cinco variables **sociodemográficas**
+(edad, género, nivel educativo, país de residencia y etnia), siete
+variables **psicológicas**, que permiten explorar la asociación entre
+características personales y consumo, y diecinueve variables de
+**consumo**, que registran la categoría temporal del último consumo
+declarado de cada sustancia.
 
 Entre las variables psicológicas se encuentran la impulsividad, la
 búsqueda de sensaciones y las cinco dimensiones del modelo *Big Five*,
@@ -278,13 +284,13 @@ Por último, las variables de consumo corresponden a distintas
 sustancias, identificadas mediante su nombre o abreviatura. Entre las
 denominaciones menos evidentes se
 encuentran `meth` (metadona), `legalh` (*legal highs*), `vsa` (abuso de
-sustancias volátiles) y `semer` (Semeron), una sustancia ficticia incluida en el
-cuestionario original.
+sustancias volátiles) y `semer` (Semeron), una sustancia ficticia
+incluida en el cuestionario original.
 
 Estas variables se encuentran codificadas mediante siete categorías
 ordinales (`CL0`–`CL6`), que indican si se ha consumido la sustancia y,
-en caso afirmativo, el intervalo temporal correspondiente al
-último consumo de cada sustancia, tal como se recoge en la Tabla
+en caso afirmativo, el intervalo temporal correspondiente al último
+consumo de cada sustancia, tal como se recoge en la Tabla
 \ref{tab:codificacion_consumo}.
 
 \begin{table}[ht]
@@ -306,18 +312,22 @@ CL6 & En el último día \\
 \label{tab:codificacion_consumo}
 \end{table}
 
-Identificadas las variables, se examinan los valores originales para algunas de ellas.
+Identificadas las variables, se examinan los valores originales para
+algunas de ellas.
 
 ```{r estructura_variables}
 str(datos[c("age", "gender", "education", "ethnicity", "cscore", "amyl")])
 ```
 
-Entre estos, se distingue que las variables sociodemográficas y psicológicas están codificadas numéricamente,
-mientras que la variable de consumo utiliza códigos de texto. Según la documentación de UCI,
-los valores sociodemográficos representan categorías y las puntuaciones psicológicas han sido
-transformadas respecto a sus escalas originales, por lo que, para facilitar su interpretación,
-se recuperarán las categorías sociodemográficas y las puntuaciones originales del *Big Five*, además de realizar las
-transformaciones necesarias sobre las restantes variables psicológicas.
+Entre estos, se distingue que las variables sociodemográficas y
+psicológicas están codificadas numéricamente, mientras que la variable
+de consumo utiliza códigos de texto. Según la documentación de UCI, los
+valores sociodemográficos representan categorías y las puntuaciones
+psicológicas han sido transformadas respecto a sus escalas originales,
+por lo que, para facilitar su interpretación, se recuperarán las
+categorías sociodemográficas y las puntuaciones originales del *Big
+Five*, además de realizar las transformaciones necesarias sobre las
+restantes variables psicológicas.
 
 ### Integridad del conjunto de datos
 
@@ -406,8 +416,6 @@ en el intervalo [0, 1] para facilitar su comparación.
 ```{r normalizacion_impulsividad_ss, results="hide", warning=FALSE, message=FALSE}
 
 datos <- datos %>% mutate(across(c(impulsive, ss), rescale))
-
-summary(datos[c("impulsive", "ss")])
 ```
 
 ### Decodificación del consumo
@@ -423,15 +431,12 @@ conservando su orden para facilitar la interpretación de los datos.
 substances <- names(datos)[14:32]
 
 # Decodificamos las categorías de consumo
-datos <- datos %>%
-  mutate(across(all_of(substances),
+datos <- datos %>% mutate(across(all_of(substances),
                 ~ factor(.x,
                          levels = paste0("CL", 0:6),
                          labels = c("Never", ">10 years ago", "Last 10 years",
                                     "Last year", "Last month", "Last week", "Last day"),
                          ordered = TRUE)))
-
-table(datos$alcohol)
 ```
 
 ### Clasificación farmacológica de las sustancias
@@ -575,7 +580,7 @@ formato_densidad <- function(colores) {
 }
 ```
 
-```{r fig_densidad_cscore, fig.cap="Distribución de cscore y umbrales de detección. Los puntos se desplazan ligeramente en horizontal para reducir el solapamiento."}
+```{r fig_densidad_cscore, out.width="85%", fig.cap="Distribución de cscore y umbrales de detección. Los puntos se desplazan ligeramente en horizontal para reducir el solapamiento."}
 puntos <- outliers %>% filter(variable == "cscore") %>% mutate(grupo = case_when(
     id %in% personas_semeron$id ~ "Declara Semeron", atipico ~ "Atípico", TRUE ~ "Resto" 
     )) %>% arrange(grupo == "Declara Semeron")
@@ -712,7 +717,7 @@ fondo <- lineas %>% rename(serie = panel)
 
 ```
 
-```{r fig_consumo_edad, fig.width=9, fig.height=7, fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
+```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
 
 grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
   geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.5) +
@@ -766,11 +771,11 @@ generalizar directamente las cifras a toda la población.
 
 ### Género
 
-```{r fig_consumo_genero,fig.width=8, fig.height=5, fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
+```{r fig_consumo_genero,fig.width=5, fig.height=2.5, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
   geom_line(aes(group = substance), color = "grey75", linewidth = 1, orientation = "y")+
-  geom_point(aes(color = gender), size = 2.8) + scale_color_manual(values = col_genero)+
+  geom_point(aes(color = gender), size = 2.3) + scale_color_manual(values = col_genero)+
   scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 25), labels = porcentaje_eje)+
   labs(x = "Consumo reciente (%)", y = NULL) + theme(panel.grid.major.y = element_line(linetype = "dotted"))
 grafico_genero
@@ -841,7 +846,7 @@ formato_educacion <- function(colores) {
 }
 ```
 
-```{r fig_consumo_educacion, fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia.\\label{fig:consumo_educacion}"}
+```{r fig_consumo_educacion, out.width="85%", fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia.\\label{fig:consumo_educacion}"}
 grafico_educacion <- ggplot(
   consumo_educacion, aes(education, porcentaje, color = family, group = family)) +
   geom_line(linewidth = 0.8) + geom_point(size = 2) + formato_educacion(col_familias)
@@ -901,7 +906,7 @@ formato_psicometria <- function(colores, etiquetas) {
 }
 ```
 
-```{r fig_psicometria_policonsumo, fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
+```{r fig_psicometria_policonsumo, out.width="85%", fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
 policonsumo_grafico <- policonsumo %>%
   pivot_longer(c(impulsive, ss), names_to = "rasgo", values_to = "valor")
 
