@@ -580,18 +580,15 @@ corresponden a errores o a perfiles extremos válidos, sin eliminarlos
 automáticamente.
 
 ```{r deteccion_outliers, warning=FALSE, message=FALSE, tab.cap="Número de valores atípicos por variable y método."}
-variables <- c(big_five, "impulsive", "ss") # Una fila por persona y una observación por puntuación.
-outliers <- datos_families %>% distinct(id, .keep_all = TRUE) %>%
-  select(id, all_of(variables)) %>%
-  pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
+rasgos <- c(big_five, "impulsive", "ss")
+outliers <- datos %>% select(id, all_of(rasgos)) %>% pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
   mutate(sigma_inf = mean(valor) - 3 * sd(valor), sigma_sup = mean(valor) + 3 * sd(valor),
          hampel_inf = median(valor) - 3 * mad(valor), hampel_sup = median(valor) + 3 * mad(valor),
          boxplot_inf = quantile(valor, .25) - 1.5 * IQR(valor),
          boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>% ungroup() %>%
   pivot_longer(cols = ends_with(c("_inf", "_sup")),names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>% mutate(atipico = valor < inf | valor > sup)
 
-outliers %>%
-  group_by(variable, metodo) %>%
+outliers %>% group_by(variable, metodo) %>%
   summarise(n = sum(atipico, na.rm = TRUE), .groups = "drop") %>%
   pivot_wider(names_from = metodo, values_from = n) %>%
   select(variable, boxplot, hampel, sigma) %>%
@@ -645,22 +642,16 @@ variabilidad relevante para el estudio.
 ## Correlaciones entre personalidad y consumo
 
 ```{r correlaciones_sustancias, warning=FALSE, message=FALSE}
-consumos <- datos_families %>% select(id, substance, consumption) %>%
-  distinct() %>% pivot_wider(names_from = substance, values_from = consumption)
+sustancias_cor <- setdiff(substances, "semer")
 
-personalidad <- datos_families %>% select(id, nscore, escore, oscore, ascore, cscore, impulsive, ss) %>% distinct()
-
-datos_cor <- personalidad %>% left_join(consumos, by = "id") %>%
-  select(-id, -semer) %>% mutate(across(where(is.ordered), as.integer))
+datos_cor <- datos %>% select(all_of(c(rasgos, sustancias_cor))) %>%
+  mutate(across(all_of(sustancias_cor), as.integer))
 
 correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
+matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 ```
 
 ```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías de recencia del consumo."}
-rasgos <- c("nscore", "escore", "oscore", "ascore", "cscore", "impulsive", "ss")
-sustancias <- setdiff(colnames(correlaciones), rasgos)
-matriz_sustancias <- correlaciones[rasgos, sustancias, drop = FALSE]
-
 dibujar_correlaciones(matriz_sustancias)
 ```
 
@@ -679,9 +670,8 @@ datos_consumo <- datos_families %>%
 perfil_personas <- datos_consumo %>% distinct(id, age, gender, ethnicity)
 table(perfil_personas$age)
 table(perfil_personas$gender)
-perfil_personas %>% count(ethnicity) %>%
-  mutate(porcentaje = 100 * n / sum(n)) %>%
-  arrange(desc(n))
+perfil_personas %>% count(ethnicity) %>% mutate(porcentaje = round(100 * n / sum(n), 2)) %>%
+  arrange(desc(n)) %>% pivot_longer(c(n, porcentaje), names_to = "Medida", values_to = "valor") %>% pivot_wider(names_from = ethnicity, values_from = valor) %>% tabla_tex()
 ```
 
 ```{r consumo_genero_etnia, results="hide", warning=FALSE, message=FALSE}
@@ -754,7 +744,7 @@ fondo <- lineas %>% rename(serie = panel)
 
 ```
 
-```{r fig_consumo_edad, fig.width=9, fig.height=7.5, fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
+```{r fig_consumo_edad, fig.width=9, fig.height=7, fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
 
 grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
   geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.5) +
@@ -808,7 +798,7 @@ generalizar directamente las cifras a toda la población.
 
 ### Género
 
-```{r fig_consumo_genero, fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
+```{r fig_consumo_genero,fig.width=8, fig.height=5, fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
   geom_line(aes(group = substance), color = "grey75", linewidth = 1, orientation = "y")+
@@ -868,9 +858,7 @@ formato_educacion <- function(colores) {
 ```{r fig_consumo_educacion, fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia.\\label{fig:consumo_educacion}"}
 grafico_educacion <- ggplot(
   consumo_educacion, aes(education, porcentaje, color = family, group = family)) +
-  geom_line(linewidth = 0.8) +
-  geom_point(size = 2) +
-  formato_educacion(col_familias)
+  geom_line(linewidth = 0.8) + geom_point(size = 2) + formato_educacion(col_familias)
 
 grafico_educacion
 ```
@@ -890,12 +878,9 @@ consumidas por cada participante, conservando sus puntuaciones de
 impulsividad (`impulsive`) y búsqueda de sensaciones (`ss`).
 
 ```{r medida_policonsumo, warning=FALSE, message=FALSE}
-datos_sensaciones <- datos_families %>% 
-  filter(!substance %in% c("alcohol", "caff", "choc", "semer")) %>%
-  mutate(reciente = if_else(is.na(consumption), NA, as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
 
-policonsumo <- datos_sensaciones %>% group_by(id) %>%
-  summarise( n_sustancias = sum(reciente), impulsive = first(impulsive),cscore = first(cscore), ss = first(ss))
+policonsumo <- datos_consumo %>% filter(!substance %in% c("alcohol", "caff", "choc")) %>%
+  group_by(id) %>% summarise(n_sustancias = sum(reciente), across(c(impulsive, cscore, ss), first), .groups = "drop")
 
 summary(policonsumo)
 ```
@@ -914,10 +899,8 @@ consumidores de dos o tres (`2-3`), y consumidores de cuatro o más
 la muestra, respectivamente.
 
 ```{r grupos_policonsumo, warning=FALSE, message=FALSE}
-policonsumo <- policonsumo %>% mutate( grupo = case_when(
-      n_sustancias == 0 ~ "0",n_sustancias == 1 ~ "1",
-      n_sustancias == 2 | n_sustancias == 3 ~ "2-3", n_sustancias >= 4 ~ "4+" ),
-    grupo = factor(grupo, levels = c("0", "1", "2-3", "4+")))
+policonsumo <- policonsumo %>% mutate(grupo = cut(n_sustancias,
+                    breaks = c(-Inf, 0, 1, 3, Inf), labels = c("0", "1", "2-3", "4+")))
 
 table(policonsumo$grupo) 
 ```
@@ -941,10 +924,8 @@ policonsumo_grafico <- policonsumo %>%
 rho_imp <- cor(policonsumo$n_sustancias, policonsumo$impulsive, method = "spearman")
 rho_ss <- cor(policonsumo$n_sustancias, policonsumo$ss, method = "spearman")
 
-etiquetas_rasgos <- c(
-  impulsive = sprintf("impulsive\nSpearman: %.3f", rho_imp),
-  ss = sprintf("ss\nSpearman: %.3f", rho_ss)
-)
+etiquetas_rasgos <- c( impulsive = sprintf("impulsive\nSpearman: %.3f", rho_imp),
+  ss = sprintf("ss\nSpearman: %.3f", rho_ss))
 
 grafico_psicometria <- ggplot(policonsumo_grafico, aes(grupo, valor, fill = grupo)) +
   geom_boxplot(width = 0.6, alpha = 0.8, outlier.size = 1) +
