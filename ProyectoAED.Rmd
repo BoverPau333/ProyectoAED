@@ -845,7 +845,7 @@ fondo <- lineas %>% rename(serie = panel)
 
 ```
 
-```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales.\\label{fig:consumo_genero}" }
+```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales.\\label{fig:consumo_edad}" }
 
 grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
   geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.5) +
@@ -859,36 +859,15 @@ grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
 grafico_edad_familias
 ```
 
-La Figura \ref{fig:consumo_genero} muestra que el consumo reciente declarado es generalmente
-menor en los grupos de mayor edad, aunque la magnitud de las diferencias
-depende de la sustancia. Los cannabinoides presentan la mayor diferencia
-entre jóvenes y mayores, seguidos de psicodélicos, estimulantes y
-empatógenos. En varias familias, las mayores caídas aparecen entre los
-grupos de 18–24 y 25–34 años. El alcohol y la nicotina mantienen una presencia considerable en todas
-las edades. En cambio, psicodélicos, estimulantes, empatógenos y disociativos
-presentan porcentajes observados nulos en el último grupo. Estas cifras
-indican consumo durante los últimos doce meses, pero no permiten conocer
-su frecuencia, cantidad ni la existencia de dependencia.
+La Figura \ref{fig:consumo_edad} muestra que **el consumo reciente declarado es generalmente menor en los grupos de mayor edad**, aunque las diferencias dependen de la sustancia. Los **cannabinoides presentan la mayor diferencia entre jóvenes y mayores**, seguidos de psicodélicos, estimulantes y empatógenos. En varias familias, las mayores caídas aparecen entre los grupos de 18–24 y 25–34 años. El **alcohol y la nicotina mantienen una presencia considerable en todas las edades**. En cambio, psicodélicos, estimulantes, empatógenos y disociativos presentan porcentajes observados nulos en el último grupo. Estas cifras indican consumo durante los últimos doce meses, pero no permiten conocer su frecuencia, cantidad ni la existencia de dependencia.
 
-La principal excepción al descenso general aparece en los depresores,
-cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65.
-Una posible explicación sería la presencia de benzodiacepinas, cuyo uso
-por prescripción aumenta con la edad en estudios poblacionales. También se observa un
-pequeño repunte de cannabinoides del 26 % al 28 %  explicable del mismo modo, que podría deberse a
-variabilidad muestral y no necesariamente a una tendencia real.
+La principal excepción al descenso general aparece en los **depresores, cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65**. Una posible explicación sería la presencia de benzodiacepinas y su uso por prescripción, aunque esta hipótesis no puede comprobarse con la gráfica. También se observa un pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a variabilidad muestral y no necesariamente a una tendencia real.
 
-Finalmente, las diferencias deben interpretarse con cautela porque se
-comparan personas distintas, no la evolución de los mismos
-participantes. La escasa representación de mayores de 65 años hace que
-unas pocas respuestas modifiquen considerablemente sus porcentajes, y un
-0 % no demuestra ausencia de consumo en la población. Por tanto, los
-resultados muestran una asociación real entre edad y consumo,
-pero no permiten afirmar que envejecer provoque su abandono ni
-generalizar directamente las cifras a toda la población.
+Finalmente, las diferencias deben interpretarse con cautela porque **se comparan personas distintas, no la evolución de los mismos participantes**. La escasa representación de mayores de 65 años hace que unas pocas respuestas modifiquen considerablemente sus porcentajes, y **un 0 % no demuestra ausencia de consumo en la población**. Por tanto, los resultados muestran una *asociación descriptiva entre edad y consumo en esta muestra*, pero **no permiten afirmar que envejecer provoque su abandono** ni generalizar directamente las cifras a toda la población.
 
 ### Género
 
-```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
+```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales.\\label{fig:consumo_genero}"}
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
   geom_line(aes(group = substance), color = "grey75", linewidth = 1, orientation = "y")+
@@ -898,26 +877,19 @@ grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>%
 grafico_genero
 ```
 
-A primera vista, el chocolate, la cafeína y el alcohol presentan
-porcentajes de consumo reciente muy elevados y casi solapados entre
+En la Figura \ref{fig:consumo_genero} se observa como el chocolate, la cafeína y el alcohol presentan
+porcentajes de consumo muy elevados y casi solapados entre
 hombres y mujeres. **La nicotina constituye una excepción entre las
 sustancias de consumo socialmente extendido**, ya que muestra un
-porcentaje claramente superior en los hombres.
-
-En el resto de las sustancias representadas también se observa mayor
+porcentaje claramente superior en los hombres. En el resto de las sustancias representadas también se observa mayor
 consumo reciente declarado entre los hombres. La separación es
 especialmente visible en cannabis y *legal highs*, seguidas de
-sustancias como éxtasis, anfetaminas y setas. Por tanto, algunas de las
-mayores diferencias en puntos porcentuales aparecen en sustancias con un
-consumo relativamente extendido, fuera del grupo de las más consumidas.
-
-En las sustancias menos consumidas, como heroína, sustancias volátiles y
-crack, los porcentajes de ambos grupos se aproximan. Sin embargo, **una
+sustancias como éxtasis, anfetaminas y setas. Las mayores diferencias en puntos porcentuales aparecen en sustancias con un
+consumo relativamente extendido, fuera del grupo de las más consumidas. En las sustancias menos consumidas, como heroína, sustancias volátiles y
+crack, los porcentajes de ambos grupos se vuelven a aproximar. Sin embargo, **una
 diferencia absoluta pequeña no implica necesariamente una diferencia
 relativa pequeña**: cuando el consumo es poco frecuente, unos pocos
 puntos porcentuales pueden representar una proporción considerable.
-Estos resultados describen diferencias en la muestra y no permiten
-atribuirlas exclusivamente al género.
 
 ## Consumo reciente según nivel educativo
 
