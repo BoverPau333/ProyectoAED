@@ -22,7 +22,7 @@ authorcitation: |
   Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
 output:
   rticles::mdpi_article:
-     extra_dependencies: ["longtable", "xurl", "fvextra"]
+     extra_dependencies: ["longtable", "xurl", "fvextra", "float"]
   pdf_document: default
 type: article
 status: submit
@@ -70,6 +70,7 @@ header-includes:
   - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
   - \usepackage{etoolbox}
   - \AtBeginEnvironment{verbatim}{\scriptsize}
+  - \AtBeginDocument{\renewcommand{\normalsize}{\fontsize{9}{11}\selectfont}\normalsize}
 ---
 
 # Introducción
@@ -168,6 +169,10 @@ col_consumo <- c(
   "4+"  = "#08519C"
 )
 
+# Periodo del último consumo: azul y naranja de la paleta común, y gris.
+col_periodo_consumo <- c("Último año" = "#0072B2",
+                        "Hace más de un año" = "#D95F02", "Nunca" = "#DDDDDD")
+
 col_paneles <- c(col_familias, col_sustancias[c("nicotine", "alcohol")])
 col_genero <- c(Male = "#0072B2", Female = "#D95F02")
 col_atipicos <- c("Resto" = "#9ECAE1", "Atípico" = "#D55E00",
@@ -187,10 +192,14 @@ dibujar_correlaciones <- function(matriz) {
 }
 
 #Funcion auxiliar para generar una tabla
-tabla_tex <- function(datos, ...) {
+tabla_tex <- function(datos, compacta = FALSE, ...) {
   tabla <- knitr::kable(datos, format = "latex", booktabs = TRUE,
                         longtable = FALSE,
                         caption = knitr::opts_current$get("tab.cap"), ...)
+  if (compacta) tabla <- sub(
+    "\\centering", "\\centering\n\\scriptsize\n\\renewcommand{\\arraystretch}{0.95}",
+    tabla, fixed = TRUE
+  )
   knitr::asis_output(paste0(
     "\\begingroup\n\\scriptsize\n",
     "\\setlength{\\tabcolsep}{3pt}\n",
@@ -452,8 +461,11 @@ uci_classification <- data.frame(
 
 ### Reestructuración de los datos
 
-Hasta ahora, el conjunto de datos presenta un formato ancho, con una columna de consumo por sustancia. Para facilitar el análisis por sustancias y familias farmacológicas, se utiliza pivot_longer() para reorganizarlo en formato **tidy**, agrupando las variables de consumo en dos columnas: la sustancia y el
-momento de su último consumo. Así, cada fila corresponde a un participante y una sustancia, conservándose las características sociodemográficas y psicológicas del participante.
+Hasta ahora, el conjunto de datos presenta un formato ancho, con una
+columna de consumo por sustancia. Para facilitar el análisis por
+sustancias y familias farmacológicas, se utiliza `pivot_longer()` para
+reorganizarlo en formato largo, agrupando las variables de consumo en
+dos columnas: la sustancia y la categoría temporal de su último consumo. Así, cada fila corresponde a un participante y una sustancia, conservándose las características sociodemográficas y psicológicas del participante.
 
 Finalmente, mediante `left_join()`, se incorpora la familia
 farmacológica correspondiente a cada sustancia, completando así el
@@ -504,7 +516,126 @@ consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "famil
 
 # Resultados
 
+En este apartado, se realiza un análisis exploratorio de los datos ya procesados para estudiar las características
+de la muestra y los patrones de consumo de sustancias.
+
 ## Caracterización univariante de la muestra
+
+Como primer paso, se examina por separado la distribución de las variables sociodemográficas, psicológicas y de consumo, utilizando medidas y representaciones adecuadas a su tipo.
+
+### Variables sociodemográficas
+
+Para caracterizar la muestra, se analiza la distribución de los participantes según su edad, género, nivel educativo, país de residencia y etnia mediante frecuencias y porcentajes. Este análisis permite identificar las categorías predominantes y detectar posibles desequilibrios de representación.
+
+```{r resumen_sociodemografico}
+var_socio <- c("age", "gender", "country", "education", "ethnicity")
+
+resumen_socio <- datos %>%
+  select(all_of(var_socio)) %>%
+  mutate(across(everything(), as.character)) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "categoria") %>%
+  count(variable, categoria) %>%
+  group_by(variable) %>%
+  mutate(
+    orden = match(categoria, levels(datos[[first(variable)]])),
+    frecuencia = sprintf("%d (%.1f%%)", n, 100 * n / sum(n))
+  ) %>%
+  ungroup() %>%
+  arrange(match(variable, var_socio), orden)
+```
+
+```{r tabla_sociodemografica, echo=FALSE, results='asis', tab.cap="Distribución sociodemográfica de la muestra."}
+bloque <- function(variables) {
+  resumen_socio %>%
+    filter(variable %in% variables) %>%
+    mutate(variable = if_else(duplicated(variable), "", variable)) %>%
+    select(variable, categoria, frecuencia)
+}
+
+izq <- bloque(c("age", "gender", "country"))
+der <- bloque(c("education", "ethnicity"))
+izq[nrow(der), ] <- ""
+
+tabla <- tabla_tex(
+  cbind(izq, der), compacta = TRUE,
+  col.names = rep(c("Variable", "Categoría", "n (%)"), 2),
+  align = rep(c("l", "l", "r"), 2), linesep = "", position = "H"
+)
+
+lineas_tabla <- strsplit(as.character(tabla), "\n", fixed = TRUE)[[1]]
+filas_tabla <- grep(" & ", lineas_tabla, fixed = TRUE)[-1]
+
+for (i in c(6, 8, 9)) {
+  columnas <- if (i == 9) "4-6" else "1-3"
+  lineas_tabla[filas_tabla[i]] <- paste0(
+    lineas_tabla[filas_tabla[i]], "\n\\cmidrule(lr){", columnas, "}"
+  )
+}
+
+knitr::asis_output(paste(lineas_tabla, collapse = "\n"))
+```
+
+La muestra presenta una mayor concentración de participantes jóvenes, con un **59,6 %** de *menores de 35 años*, y una distribución prácticamente *equilibrada por género* (943 hombres y 942 mujeres). Predominan los residentes en Reino Unido (**55,38 %**) y quienes se identifican como *White* (**91,25 %**), mientras que *Some college* (**26,84 %**) y *Bachelor’s* (**25,46 %**) son los niveles educativos más frecuentes.
+
+Esta desigual representación de algunos grupos requiere cautela al interpretar las comparaciones posteriores, especialmente aquellas basadas en muestras reducidas.
+
+### Variables de consumo
+
+Tras describir el perfil de los participantes, se examina el tiempo
+transcurrido desde el último consumo de cada sustancia. Se distinguen
+quienes nunca las han consumido, quienes lo hicieron hace más de un año
+y quienes declaran consumo durante los últimos doce meses.
+
+```{r resumen_periodo_consumo}
+resumen_periodo_consumo <- datos_consumo %>%
+  filter(!is.na(consumption)) %>%
+  mutate(periodo = case_when(
+    consumption == "Never" ~ "Nunca",
+    reciente ~ "Último año",
+    TRUE ~ "Hace más de un año"
+  )) %>%
+  count(substance, periodo) %>%
+  group_by(substance) %>%
+  mutate(porcentaje = 100 * n / sum(n)) %>%
+  ungroup()
+```
+
+```{r fig_periodo_consumo, echo=FALSE, fig.width=7, fig.height=3.6, out.width="90%", fig.pos="H", fig.cap="Tiempo desde el último consumo. Cada barra suma el 100 %; las cifras indican el porcentaje de consumo durante el último año. Se excluye Semeron."}
+orden_sustancias <- resumen_periodo_consumo %>%
+  filter(periodo == "Último año") %>% arrange(porcentaje) %>% pull(substance)
+resumen_periodo_consumo <- resumen_periodo_consumo %>% mutate(
+  substance = factor(substance, levels = orden_sustancias),
+  periodo = factor(periodo, levels = c("Último año", "Hace más de un año", "Nunca")))
+
+etiquetas_sustancias <- c(alcohol = "Alcohol", amphet = "Anfetaminas",
+  amyl = "Nitrito de amilo", benzos = "Benzodiacepinas", caff = "Cafeína",
+  cannabis = "Cannabis", choc = "Chocolate", coke = "Cocaína", crack = "Crack",
+  ecstasy = "Éxtasis", heroin = "Heroína", ketamine = "Ketamina",
+  legalh = "Legal highs", lsd = "LSD", meth = "Metadona",
+  mushrooms = "Setas alucinógenas", nicotine = "Nicotina", vsa = "Sustancias volátiles")
+
+ggplot(resumen_periodo_consumo, aes(porcentaje, substance, fill = periodo)) +
+  geom_col(width = 0.7, position = position_stack(reverse = TRUE)) +
+  geom_text(data = filter(resumen_periodo_consumo, periodo == "Último año"),
+            aes(x = 102, label = sprintf("%.1f%%", porcentaje)),
+            hjust = 0, size = 2.5, color = "grey25") +
+  scale_fill_manual(values = col_periodo_consumo,
+    breaks = c("Último año", "Hace más de un año", "Nunca")) +
+  scale_y_discrete(labels = etiquetas_sustancias) +
+  scale_x_continuous(limits = c(0, 114), breaks = seq(0, 100, 25),
+                     labels = porcentaje_eje, expand = expansion(mult = 0)) +
+  labs(x = "Porcentaje de participantes", y = NULL) +
+  tema_aed +
+  theme(panel.grid.major.y = element_blank(), axis.text = element_text(size = 8),
+        legend.text = element_text(size = 8))
+```
+
+El consumo durante el último año predomina en chocolate, cafeína y alcohol
+(97,6 %, 96,8 % y 92,8 %), seguidos de nicotina y cannabis (56,2 % y
+53,0 %). En crack, sustancias volátiles y heroína no alcanza el 7 %.
+En el nitrito de amilo, en cambio, el consumo anterior al último año es
+más frecuente que el reciente. Estos porcentajes indican cuándo se consumió por última vez,
+sin informar sobre la frecuencia ni la cantidad consumida.
 
 ## Valores atípicos y controles de calidad
 
@@ -623,19 +754,6 @@ datos_consumo <- datos_families %>%
 
 ```
 
-```{r perfil_muestra, warning=FALSE, message=FALSE}
-perfil_personas <- datos_consumo %>% distinct(id, age, gender, ethnicity)
-table(perfil_personas$age)
-table(perfil_personas$gender)
-perfil_personas %>% count(ethnicity) %>% mutate(porcentaje = round(100 * n / sum(n), 2)) %>%
-  arrange(desc(n)) %>% pivot_longer(c(n, porcentaje), names_to = "Medida", values_to = "valor") %>% pivot_wider(names_from = ethnicity, values_from = valor) %>% tabla_tex()
-```
-
-```{r consumo_genero_etnia, results="hide", warning=FALSE, message=FALSE}
-# Género y etnia por sustancia se conservan para los gráficos posteriores.
-consumo_genero <- resumir_consumo(datos_consumo, "gender", "substance")
-consumo_etnia <- resumir_consumo(datos_consumo, "ethnicity", "substance")
-```
 
 ## Consumo reciente según características sociodemográficas
 
