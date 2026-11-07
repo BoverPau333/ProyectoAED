@@ -681,9 +681,8 @@ outliers <- datos %>% select(id, all_of(rasgos)) %>% pivot_longer(-id, names_to 
 
 outliers %>% group_by(variable, metodo) %>%
   summarise(n = sum(atipico, na.rm = TRUE), .groups = "drop") %>%
-  pivot_wider(names_from = metodo, values_from = n) %>%
-  select(variable, boxplot, hampel, sigma) %>%
-  tabla_tex(col.names = c("Variable", "Boxplot", "Hampel", "Sigma"))
+  pivot_wider(names_from = variable, values_from = n) %>%
+  arrange(metodo) %>%  tabla_tex()
 ```
 
 ```{r include=FALSE}
@@ -820,7 +819,7 @@ fondo <- lineas %>% rename(serie = panel)
 
 ```
 
-```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
+```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales.\\label{fig:consumo_genero}" }
 
 grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
   geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.5) +
@@ -834,21 +833,13 @@ grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
 grafico_edad_familias
 ```
 
-La gráfica muestra que el consumo reciente declarado es generalmente
+La Figura \ref{fig:consumo_genero} muestra que el consumo reciente declarado es generalmente
 menor en los grupos de mayor edad, aunque la magnitud de las diferencias
 depende de la sustancia. Los cannabinoides presentan la mayor diferencia
 entre jóvenes y mayores, seguidos de psicodélicos, estimulantes y
 empatógenos. En varias familias, las mayores caídas aparecen entre los
-grupos de 18–24 y 25–34 años. Este patrón es compatible con estudios que
-relacionan las transiciones hacia la vida adulta con cambios en el
-consumo, aunque nuestros datos no permiten establecer sus causas.
-[Artículo de
-referencia](https://pmc.ncbi.nlm.nih.gov/articles/PMC3828971/)
-
-El alcohol y la nicotina mantienen una presencia considerable en todas
-las edades. El alcohol pasa del 96 % entre los más jóvenes al 78 % en
-mayores de 65 años, mientras que la nicotina desciende del 76 % al 28 %.
-En cambio, psicodélicos, estimulantes, empatógenos y disociativos
+grupos de 18–24 y 25–34 años. El alcohol y la nicotina mantienen una presencia considerable en todas
+las edades. En cambio, psicodélicos, estimulantes, empatógenos y disociativos
 presentan porcentajes observados nulos en el último grupo. Estas cifras
 indican consumo durante los últimos doce meses, pero no permiten conocer
 su frecuencia, cantidad ni la existencia de dependencia.
@@ -856,25 +847,22 @@ su frecuencia, cantidad ni la existencia de dependencia.
 La principal excepción al descenso general aparece en los depresores,
 cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65.
 Una posible explicación sería la presencia de benzodiacepinas, cuyo uso
-por prescripción aumenta con la edad en estudios poblacionales; sin
-embargo, habría que desglosar esta familia y conocer los motivos de
-consumo para comprobarlo en nuestra muestra. También se observa un
-pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a
+por prescripción aumenta con la edad en estudios poblacionales. También se observa un
+pequeño repunte de cannabinoides del 26 % al 28 %  explicable del mismo modo, que podría deberse a
 variabilidad muestral y no necesariamente a una tendencia real.
-[Artículo de referencia](https://pubmed.ncbi.nlm.nih.gov/25517224/)
 
 Finalmente, las diferencias deben interpretarse con cautela porque se
 comparan personas distintas, no la evolución de los mismos
 participantes. La escasa representación de mayores de 65 años hace que
 unas pocas respuestas modifiquen considerablemente sus porcentajes, y un
 0 % no demuestra ausencia de consumo en la población. Por tanto, los
-resultados muestran una asociación entre edad y consumo en esta muestra,
+resultados muestran una asociación real entre edad y consumo,
 pero no permiten afirmar que envejecer provoque su abandono ni
 generalizar directamente las cifras a toda la población.
 
 ### Género
 
-```{r fig_consumo_genero,fig.width=5, fig.height=2.5, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
+```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
   geom_line(aes(group = substance), color = "grey75", linewidth = 1, orientation = "y")+
@@ -995,7 +983,11 @@ la muestra, respectivamente.
 policonsumo <- policonsumo %>% mutate(grupo = cut(n_sustancias,
                     breaks = c(-Inf, 0, 1, 3, Inf), labels = c("0", "1", "2-3", "4+")))
 
-table(policonsumo$grupo) 
+policonsumo_grafico <- policonsumo %>%
+  pivot_longer(c(impulsive, ss), names_to = "rasgo", values_to = "valor")
+
+rho_imp <- cor(policonsumo$n_sustancias, policonsumo$impulsive, method = "spearman")
+rho_ss <- cor(policonsumo$n_sustancias, policonsumo$ss, method = "spearman")
 ```
 
 ```{r include=F}
@@ -1007,18 +999,12 @@ formato_psicometria <- function(colores, etiquetas) {
     theme(legend.position = "none", panel.grid.major.x = element_blank())
   )
 }
-```
-
-```{r fig_psicometria_policonsumo, out.width="85%", fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
-policonsumo_grafico <- policonsumo %>%
-  pivot_longer(c(impulsive, ss), names_to = "rasgo", values_to = "valor")
-
-rho_imp <- cor(policonsumo$n_sustancias, policonsumo$impulsive, method = "spearman")
-rho_ss <- cor(policonsumo$n_sustancias, policonsumo$ss, method = "spearman")
 
 etiquetas_rasgos <- c( impulsive = sprintf("impulsive\nSpearman: %.3f", rho_imp),
   ss = sprintf("ss\nSpearman: %.3f", rho_ss))
+```
 
+```{r fig_psicometria_policonsumo, out.width="85%", fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
 grafico_psicometria <- ggplot(policonsumo_grafico, aes(grupo, valor, fill = grupo)) +
   geom_boxplot(width = 0.6, alpha = 0.8, outlier.size = 1) +
   formato_psicometria(col_consumo, etiquetas_rasgos)
