@@ -654,31 +654,6 @@ ggplot(resumen_periodo_consumo, aes(porcentaje, substance, fill = periodo)) +
 
 El predominio de chocolate, cafeína y alcohol refleja su presencia en los hábitos cotidianos, aunque su consumo generalizado puede ocultar patrones de sustancias menos frecuentes en los análisis posteriores. Asimismo, haber probado una sustancia no implica necesariamente haberla consumido durante el último año.
 
-### Variables psicológicas
-
-Finalmente, se estudian las puntuaciones psicológicas mediante un resumen estadístico, que permitirá conocer su concentración y variabilidad antes de estudiar su asociación con el consumo de sustancias.
-
-```{r resumen_psicologico}
-resumen_psicologico <- datos %>%
-  select(all_of(c(big_five, "impulsive", "ss"))) %>%
-  pivot_longer(everything(), names_to = "Variable", values_to = "Valor") %>%
-  group_by(Variable) %>%
-  summarise(
-    Media = mean(Valor), Mediana = median(Valor), Desviacion = sd(Valor),
-    Q1 = quantile(Valor, 0.25), Q3 = quantile(Valor, 0.75),
-    .groups = "drop"
-  ) %>%
-  arrange(match(Variable, c(big_five, "impulsive", "ss")))
-```
-
-```{r tabla_psicologica, echo=FALSE, results='asis', tab.cap="Distribución de las puntuaciones psicológicas."}
-tabla_tex(resumen_psicologico, compacta = TRUE, digits = 2,
-          linesep = "", position = "H", escape = FALSE,
-          col.names = c("Variable", "Media", "Mediana", "$\\sigma$", "Q1", "Q3"))
-```
-
-Las puntuaciones psicológicas muestran diferencias en su variabilidad, con una mayor dispersión del neuroticismo entre los cinco rasgos de personalidad y de la búsqueda de sensaciones frente a la impulsividad, ambas reescaladas. Estas diferencias deben tenerse en cuenta al comparar las distribuciones de las puntuaciones entre los grupos de consumo y policonsumo de sustancias.
-
 ## Control de calidad y detección de valores atípicos
 
 Antes de examinar las relaciones entre variables, se revisan posibles problemas de fiabilidad en las respuestas y puntuaciones psicológicas extremas, para determinar si requieren algún tratamiento.
