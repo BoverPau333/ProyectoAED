@@ -512,6 +512,7 @@ resumir_consumo <- function(ds, perfil, categoria) {
 
 consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
 consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
+consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
 ```
 
 # Resultados
