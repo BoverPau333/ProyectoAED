@@ -353,8 +353,10 @@ c(
 )
 ```
 
-Al no presentar ninguna de estas anomalías, no es necesario imputar datos ni eliminar registros. 
-Asimismo, se corrige la errata en el nombre de la variable de impulsividad, registrada en los metadatos como `impuslive`, renombrándola a `impulsive.`
+Al no presentar ninguna de estas anomalías, no es necesario imputar
+datos ni eliminar registros. Asimismo, se corrige la errata en el nombre
+de la variable de impulsividad, registrada en los metadatos como
+`impuslive`, renombrándola a `impulsive.`
 
 ```{r corregir_impulsive, results="hide", warning=FALSE, message=FALSE}
 datos <- rename(datos, impulsive = impuslive)
@@ -363,26 +365,31 @@ datos <- rename(datos, impulsive = impuslive)
 ### Decodificación de variables sociodemográficas
 
 Para facilitar la interpretación de las variables sociodemográficas, se
-sustituyen sus códigos numéricos por las las categorías documentadas por UCI mediante `factor()`, conservando el orden de edad y nivel educativo
+sustituyen sus códigos numéricos por las las categorías documentadas por
+UCI mediante `factor()`, conservando el orden de edad y nivel educativo.
+Se muestra la edad como ejemplo.
 
 ```{r decodificacion_sociodemografica, results="hide", warning=FALSE, message=FALSE}
+datos <- datos %>% mutate(
+    age = factor(age,levels = sort(unique(age)),ordered = TRUE,
+                 labels = c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")))
+```
+
+```{r, echo=FALSE}
 datos <- datos %>%
   mutate(
-    age = factor(age,levels = sort(unique(age)),ordered = TRUE,
-                 labels = c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")),
-
     gender = factor(gender,levels = sort(unique(gender)),
                     labels = c("Male", "Female")),
-
+    
     education = factor(education, levels = sort(unique(education)),ordered = TRUE,
                        labels = c("<16 years", "16 years", "17 years", "18 years",
                                   "Some college", "Prof. certificate",
                                   "Bachelor's", "Master's", "Doctorate")),
-
+    
     country = factor(country, levels = sort(unique(country)),
                      labels = c("USA", "New Zealand", "Other",
                                 "Australia", "Ireland", "Canada", "UK")),
-
+    
     ethnicity = factor(ethnicity, levels = sort(unique(ethnicity)),
                        labels = c("Black", "Asian", "White",
                                   "White-Black", "Other","White-Asian", "Black-Asian"))
@@ -391,9 +398,9 @@ datos <- datos %>%
 
 ### Transformación de variables psicológicas
 
-La interpretación de las variables psicológicas puede facilitarse recuperando las puntuaciones
-originales del *Big Five* y normalizando las escalas de impulsividad
-(BIS-11) y búsqueda de sensaciones (ImpSS).
+La interpretación de las variables psicológicas puede facilitarse
+recuperando las puntuaciones originales del *Big Five* y normalizando
+las escalas de impulsividad (BIS-11) y búsqueda de sensaciones (ImpSS).
 
 Para el *Big Five*, se relacionan los valores transformados, ordenados
 de menor a mayor, con las puntuaciones originales documentadas por UCI,
@@ -427,7 +434,8 @@ datos <- datos %>% mutate(across(c(impulsive, ss), rescale))
 Aunque los códigos `CL0`–`CL6` permiten identificar el momento del
 último consumo, su significado no queda claro sin consultar las
 equivalencias anteriores. Por ello, se sustituyen
-mediante `factor()` por etiquetas temporales más descriptivas y ordenadas.
+mediante `factor()` por etiquetas temporales más descriptivas y
+ordenadas.
 
 ```{r categorias_consumo, results="hide", warning=FALSE, message=FALSE}
 # Identificamos las columnas correspondientes a las sustancias
@@ -445,9 +453,9 @@ datos <- datos %>% mutate(across(all_of(substances),
 ### Clasificación farmacológica de las sustancias
 
 A partir de las siete familias de *The Drugs Wheel*, se establece una
-correspondencia con las sustancias del conjunto UCI. Dado que algunas
-no pueden asignarse directamente a estas familias, se incorpora la categoría  
-`Other`, para `legalh`, y `Fake`, para `semer`.
+correspondencia con las sustancias del conjunto UCI. Dado que algunas no
+pueden asignarse directamente a estas familias, se incorpora la
+categoría   `Other`, para `legalh`, y `Fake`, para `semer`.
 
 ```{r familias_sustancias, include = TRUE, warning=FALSE, message=FALSE}
 families <- classification$Name
@@ -465,7 +473,10 @@ Hasta ahora, el conjunto de datos presenta un formato ancho, con una
 columna de consumo por sustancia. Para facilitar el análisis por
 sustancias y familias farmacológicas, se utiliza `pivot_longer()` para
 reorganizarlo en formato largo, agrupando las variables de consumo en
-dos columnas: la sustancia y la categoría temporal de su último consumo. Así, cada fila corresponde a un participante y una sustancia, conservándose las características sociodemográficas y psicológicas del participante.
+dos columnas: la sustancia y la categoría temporal de su último consumo.
+Así, cada fila corresponde a un participante y una sustancia,
+conservándose las características sociodemográficas y psicológicas del
+participante.
 
 Finalmente, mediante `left_join()`, se incorpora la familia
 farmacológica correspondiente a cada sustancia, completando así el
@@ -512,12 +523,14 @@ resumir_consumo <- function(ds, perfil, categoria) {
 
 consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
 consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
+consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
 ```
 
 # Resultados
 
-En este apartado, se realiza un análisis exploratorio de los datos ya procesados para estudiar las características
-de la muestra y los patrones de consumo de sustancias.
+En este apartado, se realiza un análisis exploratorio de los datos ya
+procesados para estudiar las características de la muestra y los
+patrones de consumo de sustancias.
 
 ## Caracterización univariante de la muestra
 
@@ -525,7 +538,11 @@ Como primer paso, se examina por separado la distribución de las variables cate
 
 ### Variables sociodemográficas
 
-Para caracterizar la muestra, se analiza la distribución de los participantes según su edad, género, nivel educativo, país de residencia y etnia mediante frecuencias y porcentajes. Este análisis permite identificar las categorías predominantes y detectar posibles desequilibrios de representación.
+Para caracterizar la muestra, se analiza la distribución de los
+participantes según su edad, género, nivel educativo, país de residencia
+y etnia mediante frecuencias y porcentajes. Este análisis permite
+identificar las categorías predominantes y detectar posibles
+desequilibrios de representación.
 
 ```{r resumen_sociodemografico}
 var_socio <- c("age", "gender", "country", "education", "ethnicity")
@@ -575,9 +592,17 @@ for (i in c(6, 8, 9)) {
 knitr::asis_output(paste(lineas_tabla, collapse = "\n"))
 ```
 
-La muestra presenta una mayor concentración de participantes jóvenes, con un **59,6 %** de *menores de 35 años*, y una distribución prácticamente *equilibrada por género* (943 hombres y 942 mujeres). Predominan los residentes en Reino Unido (**55,38 %**) y quienes se identifican como *White* (**91,25 %**), mientras que *Some college* (**26,84 %**) y *Bachelor’s* (**25,46 %**) son los niveles educativos más frecuentes.
+La muestra presenta una mayor concentración de participantes jóvenes,
+con un **59,6 %** de *menores de 35 años*, y una distribución
+prácticamente *equilibrada por género* (943 hombres y 942 mujeres).
+Predominan los residentes en Reino Unido (**55,38 %**) y quienes se
+identifican como *White* (**91,25 %**), mientras que *Some college*
+(**26,84 %**) y *Bachelor’s* (**25,46 %**) son los niveles educativos
+más frecuentes.
 
-Esta desigual representación de algunos grupos requiere cautela al interpretar las comparaciones posteriores, especialmente aquellas basadas en muestras reducidas.
+Esta desigual representación de algunos grupos requiere cautela al
+interpretar las comparaciones posteriores, especialmente aquellas
+basadas en muestras reducidas.
 
 ### Variables de consumo
 
@@ -783,7 +808,6 @@ datos_consumo <- datos_families %>%
 
 ```
 
-
 ## Consumo reciente según características sociodemográficas
 
 ### Edad
@@ -848,7 +872,7 @@ fondo <- lineas %>% rename(serie = panel)
 
 ```
 
-```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales. Se comparan personas distintas, no su evolución individual."}
+```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales.\\label{fig:consumo_edad}" }
 
 grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
   geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.5) +
@@ -862,49 +886,15 @@ grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
 grafico_edad_familias
 ```
 
-La gráfica muestra que el consumo reciente declarado es generalmente
-menor en los grupos de mayor edad, aunque la magnitud de las diferencias
-depende de la sustancia. Los cannabinoides presentan la mayor diferencia
-entre jóvenes y mayores, seguidos de psicodélicos, estimulantes y
-empatógenos. En varias familias, las mayores caídas aparecen entre los
-grupos de 18–24 y 25–34 años. Este patrón es compatible con estudios que
-relacionan las transiciones hacia la vida adulta con cambios en el
-consumo, aunque nuestros datos no permiten establecer sus causas.
-[Artículo de
-referencia](https://pmc.ncbi.nlm.nih.gov/articles/PMC3828971/)
+La Figura \ref{fig:consumo_edad} muestra que **el consumo reciente declarado es generalmente menor en los grupos de mayor edad**, aunque las diferencias dependen de la sustancia. Los **cannabinoides presentan la mayor diferencia entre jóvenes y mayores**, seguidos de psicodélicos, estimulantes y empatógenos. En varias familias, las mayores caídas aparecen entre los grupos de 18–24 y 25–34 años. El **alcohol y la nicotina mantienen una presencia considerable en todas las edades**. En cambio, psicodélicos, estimulantes, empatógenos y disociativos presentan porcentajes observados nulos en el último grupo. Estas cifras indican consumo durante los últimos doce meses, pero no permiten conocer su frecuencia, cantidad ni la existencia de dependencia.
 
-El alcohol y la nicotina mantienen una presencia considerable en todas
-las edades. El alcohol pasa del 96 % entre los más jóvenes al 78 % en
-mayores de 65 años, mientras que la nicotina desciende del 76 % al 28 %.
-En cambio, psicodélicos, estimulantes, empatógenos y disociativos
-presentan porcentajes observados nulos en el último grupo. Estas cifras
-indican consumo durante los últimos doce meses, pero no permiten conocer
-su frecuencia, cantidad ni la existencia de dependencia.
+La principal excepción al descenso general aparece en los **depresores, cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65**. Una posible explicación sería la presencia de benzodiacepinas y su uso por prescripción, aunque esta hipótesis no puede comprobarse con la gráfica. También se observa un pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a variabilidad muestral y no necesariamente a una tendencia real.
 
-La principal excepción al descenso general aparece en los depresores,
-cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65.
-Una posible explicación sería la presencia de benzodiacepinas, cuyo uso
-por prescripción aumenta con la edad en estudios poblacionales; sin
-embargo, habría que desglosar esta familia y conocer los motivos de
-consumo para comprobarlo en nuestra muestra. También se observa un
-pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a
-variabilidad muestral y no necesariamente a una tendencia real.
-[Artículo de referencia](https://pubmed.ncbi.nlm.nih.gov/25517224/)
-
-Finalmente, las diferencias deben interpretarse con cautela porque se
-comparan personas distintas, no la evolución de los mismos
-participantes. La escasa representación de mayores de 65 años hace que
-unas pocas respuestas modifiquen considerablemente sus porcentajes, y un
-0 % no demuestra ausencia de consumo en la población. Por tanto, los
-resultados muestran una asociación entre edad y consumo en esta muestra,
-pero no permiten afirmar que envejecer provoque su abandono ni
-generalizar directamente las cifras a toda la población.
+Finalmente, las diferencias deben interpretarse con cautela porque **se comparan personas distintas, no la evolución de los mismos participantes**. La escasa representación de mayores de 65 años hace que unas pocas respuestas modifiquen considerablemente sus porcentajes, y **un 0 % no demuestra ausencia de consumo en la población**. Por tanto, los resultados muestran una *asociación descriptiva entre edad y consumo en esta muestra*, pero **no permiten afirmar que envejecer provoque su abandono** ni generalizar directamente las cifras a toda la población.
 
 ### Género
 
-```{r fig_consumo_genero,fig.width=5, fig.height=2.5, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales."}
-consumo_genero <- resumir_consumo(datos_consumo, "gender", "substance")
-
+```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales.\\label{fig:consumo_genero}"}
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
   geom_line(aes(group = substance), color = "grey75", linewidth = 1, orientation = "y")+
@@ -914,26 +904,19 @@ grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>%
 grafico_genero
 ```
 
-A primera vista, el chocolate, la cafeína y el alcohol presentan
-porcentajes de consumo reciente muy elevados y casi solapados entre
+En la Figura \ref{fig:consumo_genero} se observa como el chocolate, la cafeína y el alcohol presentan
+porcentajes de consumo muy elevados y casi solapados entre
 hombres y mujeres. **La nicotina constituye una excepción entre las
 sustancias de consumo socialmente extendido**, ya que muestra un
-porcentaje claramente superior en los hombres.
-
-En el resto de las sustancias representadas también se observa mayor
+porcentaje claramente superior en los hombres. En el resto de las sustancias representadas también se observa mayor
 consumo reciente declarado entre los hombres. La separación es
 especialmente visible en cannabis y *legal highs*, seguidas de
-sustancias como éxtasis, anfetaminas y setas. Por tanto, algunas de las
-mayores diferencias en puntos porcentuales aparecen en sustancias con un
-consumo relativamente extendido, fuera del grupo de las más consumidas.
-
-En las sustancias menos consumidas, como heroína, sustancias volátiles y
-crack, los porcentajes de ambos grupos se aproximan. Sin embargo, **una
+sustancias como éxtasis, anfetaminas y setas. Las mayores diferencias en puntos porcentuales aparecen en sustancias con un
+consumo relativamente extendido, fuera del grupo de las más consumidas. En las sustancias menos consumidas, como heroína, sustancias volátiles y
+crack, los porcentajes de ambos grupos se vuelven a aproximar. Sin embargo, **una
 diferencia absoluta pequeña no implica necesariamente una diferencia
 relativa pequeña**: cuando el consumo es poco frecuente, unos pocos
 puntos porcentuales pueden representar una proporción considerable.
-Estos resultados describen diferencias en la muestra y no permiten
-atribuirlas exclusivamente al género.
 
 ## Consumo reciente según nivel educativo
 
@@ -946,22 +929,16 @@ titulaciones superiores. Además, los cannabinoides destacan como las
 sustancias más consumidas en todos los niveles educativos, mientras que
 los disociativos presentan los porcentajes más bajos.
 
-Estos resultados sugieren que un mayor nivel educativo podría estar
-asociado con un menor consumo de sustancias. Sin embargo, es importante
-considerar la posible influencia de la edad de los participantes. Aunque
-todos son mayores de edad, las categorías educativas no representan su
-edad actual: las categorías de 16, 17 y 18 años indican la edad a la que
-finalizaron o abandonaron sus estudios, mientras que *Some college*
-agrupa a personas que han cursado estudios universitarios sin haber
-obtenido necesariamente un título, incluyendo tanto a estudiantes
-actuales como a personas que interrumpieron su formación. Por otro lado,
-quienes poseen titulaciones superiores podrían pertenecer, en promedio,
-a grupos de mayor edad, lo que ayudaría a explicar parte del descenso
-observado en el consumo.
+Sin embargo, esta tendencia podría estar influida por la edad de los
+participantes. Dado que alcanzar niveles educativos superiores requiere
+más años de formación, es posible que las personas con mayor nivel
+educativo sean, en promedio, de mayor edad y que el menor consumo
+observado esté relacionado con este factor.
 
-Por tanto, aunque los datos muestran una asociación entre el nivel
-educativo y el consumo de sustancias, no se puede afirmar que una mayor
-formación académica implique directamente un menor consumo.
+Por tanto, aunque se observa una asociación entre el nivel educativo y
+el consumo de sustancias, no podemos concluir que una mayor formación
+académica implique directamente un menor consumo sin considerar la
+influencia de la edad.
 
 ```{r  include=FALSE}
 
@@ -1025,7 +1002,11 @@ la muestra, respectivamente.
 policonsumo <- policonsumo %>% mutate(grupo = cut(n_sustancias,
                     breaks = c(-Inf, 0, 1, 3, Inf), labels = c("0", "1", "2-3", "4+")))
 
-table(policonsumo$grupo) 
+policonsumo_grafico <- policonsumo %>%
+  pivot_longer(c(impulsive, ss), names_to = "rasgo", values_to = "valor")
+
+rho_imp <- cor(policonsumo$n_sustancias, policonsumo$impulsive, method = "spearman")
+rho_ss <- cor(policonsumo$n_sustancias, policonsumo$ss, method = "spearman")
 ```
 
 ```{r include=F}
@@ -1037,18 +1018,12 @@ formato_psicometria <- function(colores, etiquetas) {
     theme(legend.position = "none", panel.grid.major.x = element_blank())
   )
 }
-```
-
-```{r fig_psicometria_policonsumo, out.width="85%", fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
-policonsumo_grafico <- policonsumo %>%
-  pivot_longer(c(impulsive, ss), names_to = "rasgo", values_to = "valor")
-
-rho_imp <- cor(policonsumo$n_sustancias, policonsumo$impulsive, method = "spearman")
-rho_ss <- cor(policonsumo$n_sustancias, policonsumo$ss, method = "spearman")
 
 etiquetas_rasgos <- c( impulsive = sprintf("impulsive\nSpearman: %.3f", rho_imp),
   ss = sprintf("ss\nSpearman: %.3f", rho_ss))
+```
 
+```{r fig_psicometria_policonsumo, out.width="85%", fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
 grafico_psicometria <- ggplot(policonsumo_grafico, aes(grupo, valor, fill = grupo)) +
   geom_boxplot(width = 0.6, alpha = 0.8, outlier.size = 1) +
   formato_psicometria(col_consumo, etiquetas_rasgos)
@@ -1056,7 +1031,7 @@ grafico_psicometria <- ggplot(policonsumo_grafico, aes(grupo, valor, fill = grup
 grafico_psicometria
 ```
 
-Podemos observar una **asociación positiva entre ambos rasgos
+Podemos observar una **asociación positiva entre ambos rasgos
 psicológicos y el número de sustancias consumidas**, aunque con
 diferencias en su comportamiento.
 
@@ -1069,9 +1044,7 @@ positiva y progresiva tanto en las medianas como los cuartiles,
 diferencia que también se observa en las correlaciones de Spearman,
 siendo mayor que la asociación de la impulsividad.
 
-# Discusión
-
-# Conclusión
+# Conclusiones
 
 En esta exploración se han descrito los patrones de consumo reciente por
 edad, género, etnia y nivel educativo, así como su asociación con los
