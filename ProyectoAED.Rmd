@@ -32,23 +32,9 @@ simplesummary: |
   de consumo reciente entre grupos sociodemográficos y se examinan sus
   asociaciones con rasgos de personalidad y policonsumo.
 abstract: |
-  El objetivo del estudio es explorar la asociación entre características
-  sociodemográficas, rasgos de personalidad y consumo de sustancias en el
-  conjunto de datos público Drug Consumption (Quantified) de UCI. Se analizan
-  1.885 observaciones mediante limpieza y recodificación de variables,
-  reconstrucción de puntuaciones del Big Five, clasificación de sustancias,
-  estadística descriptiva y correlaciones de Spearman. El consumo reciente
-  se define a partir de la última ocasión de consumo declarada, y sus
-  proporciones se comparan por edad, género, etnia y educación. También se
-  estudian los valores atípicos, las respuestas a una sustancia ficticia
-  y el policonsumo. El análisis documenta diferencias descriptivas entre
-  grupos y asociaciones de algunos rasgos psicológicos con el consumo. Dado el carácter transversal
-  de la muestra y las diferencias entre subgrupos, los resultados no
-  permiten establecer relaciones causales ni generalizar directamente las
-  prevalencias a la población general.
+  El objetivo de este estudio es explorar las asociaciones entre características sociodemográficas, rasgos de personalidad y consumo de sustancias en el conjunto de datos público *Drug Consumption (Quantified)* de UCI. Se analizan 1.885 participantes mediante preprocesamiento de variables, estadística descriptiva y correlaciones de Spearman. Se comparan las proporciones de consumo durante los últimos doce meses según edad, género, etnia y nivel educativo, y se examinan los valores atípicos, la fiabilidad de las respuestas y el policonsumo. Los resultados muestran un menor consumo reciente en los grupos de mayor edad y diferencias por género, así como porcentajes inferiores entre participantes con titulaciones superiores, cuya interpretación podría estar condicionada por la edad. En el análisis psicológico destacan las asociaciones positivas de la búsqueda de sensaciones y la apertura a la experiencia con categorías de consumo más recientes en determinadas sustancias; la búsqueda de sensaciones también se relaciona positivamente con el número de sustancias consumidas. Estas asociaciones son descriptivas y no permiten establecer causalidad ni extrapolar directamente los porcentajes a la población general.
 keywords: |
-  análisis exploratorio de datos; consumo de sustancias; Big Five;
-  impulsividad; búsqueda de sensaciones; prevalencia; policonsumo
+  Drug consumption; Exploratory data analysis; Personality traits; Sociodemographic factors; Recent substance use; Polydrug use
 dataavailability: |
   Los datos analizados proceden del repositorio público UCI Machine Learning
   Repository, [Drug Consumption (Quantified)](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified)
@@ -78,13 +64,14 @@ comportamientos.
 El objetivo de este trabajo es analizar cómo varía el consumo según el
 perfil de los participantes, prestando especial atención a la edad, el
 género, la etnia y el nivel educativo. Asimismo, se estudia la relación
-de los rasgos psicológicos con el último consumo de cada sustancia y
-con el policonsumo, buscando identificar asociaciones sin establecer
+de los rasgos psicológicos con el último consumo de cada sustancia y con
+el policonsumo, buscando identificar asociaciones sin establecer
 relaciones causales.
 
 # Materiales y métodos
 
-En este apartado se describen las fuentes de datos y los procedimientos utilizados para preparar las variables antes del análisis.
+En este apartado se describen las fuentes de datos y los procedimientos
+utilizados para preparar las variables antes del análisis.
 
 ```{r mdpi_setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -166,17 +153,11 @@ col_consumo <- c(
   "4+"  = "#08519C"
 )
 
-# Periodo del último consumo: azul y naranja de la paleta común, y gris.
-col_periodo_consumo <- c("Último año" = "#0072B2",
-                        "Hace más de un año" = "#D95F02", "Nunca" = "#DDDDDD")
-
 col_paneles <- c(col_familias, col_sustancias[c("nicotine", "alcohol")])
 col_genero <- c(Male = "#0072B2", Female = "#D95F02")
 col_atipicos <- c("Resto" = "#9ECAE1", "Atípico" = "#D55E00",
                  "Declara Semeron" = "#08519C")
 
-col_grupos <- c("Consumo socialmente extendido" = "#0072B2",
-                "Otras sustancias" = "#D95F02")
 col_correlacion <- colorRampPalette(c("#D55E00", "white", "#0072B2"))(100)
 
 porcentaje_eje <- function(x) paste0(x, "%")
@@ -465,18 +446,12 @@ uci_classification <- data.frame(
 ### Reestructuración de los datos
 
 Hasta ahora, el conjunto de datos presenta un formato ancho, con una
-columna de consumo por sustancia. Para facilitar el análisis por
-sustancias y familias farmacológicas, se utiliza `pivot_longer()` para
-reorganizarlo en formato largo, agrupando las variables de consumo en
-dos columnas: la sustancia y la categoría temporal de su último consumo.
+columna de consumo por sustancia. Mediante `pivot_longer()`, las columnas de consumo se reorganizan en formato largo, 
+con una fila por participante y sustancia y dos columnas que identifican la sustancia 
+y su último consumo. Se conservan las características personales 
+y se incorpora la familia farmacológica mediante `left_join()`.
 
-Finalmente, mediante `left_join()`, se incorpora la familia
-farmacológica correspondiente a cada sustancia, completando así el
-preprocesamiento y obteniendo un conjunto de datos preparado para el
-análisis exploratorio tanto por sustancias individuales como por
-familias.
-
-```{r construccion_datos_consumo, results="hide", warning=FALSE, message=FALSE}
+```{r construccion_datos_families, results="hide", warning=FALSE, message=FALSE}
 datos_families <- datos %>%
   pivot_longer(
     cols = all_of(uci_classification$substance),
@@ -485,37 +460,18 @@ datos_families <- datos %>%
   left_join(uci_classification, by = "substance")
 ```
 
-```{r}
-# Consumo reciente por sustancia: conservamos esta tabla para otros análisis.
-datos_consumo <- datos_families %>%
-  filter(substance != "semer") %>%
-  distinct(id, substance, .keep_all = TRUE) %>%
-  mutate(reciente = if_else(is.na(consumption), NA,
-                            as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
+A partir de esta estructura, se crea `datos_consumo`, excluyendo las filas de `semeron` por tratarse de una sustancia ficticia. Además, se define el consumo reciente como el declarado durante los últimos doce meses y una función para resumirlo mediante frecuencias y porcentajes por grupo.
 
-# Mismas exclusiones que en el análisis original por nivel educativo.
-excluir_familias <- c("alcohol", "caff", "nicotine", "choc", "semer", "legalh")
+```{r construccion_datos_consumo, results="hide", warning=FALSE, message=FALSE}
+# Consumo reciente por sustancia
+datos_consumo <- datos_families %>% filter(substance != "semer") %>% distinct(id, substance, .keep_all = TRUE) %>% mutate(reciente = if_else(is.na(consumption), NA, as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
 
-# Una fila por participante y familia; se consume si alguna respuesta es positiva.
-datos_consumo_familias <- datos_consumo %>%
-  filter(!substance %in% excluir_familias, !is.na(family)) %>%
-  group_by(id, age, gender, education, country, ethnicity, family) %>%
-  summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
-            else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
-
-#Resumen reutilizable para edad, género, etnia o educación.
+# Resumen
 resumir_consumo <- function(ds, perfil, categoria) {
-  ds %>%
-    filter(!is.na(.data[[perfil]])) %>%
-    group_by(across(all_of(c(perfil, categoria)))) %>%
-    summarise(n = sum(!is.na(reciente)), consumidores = sum(reciente, na.rm = TRUE),
-              .groups = "drop") %>%
+  ds %>% filter(!is.na(.data[[perfil]])) %>% group_by(across(all_of(c(perfil, categoria)))) %>%
+    summarise(n = sum(!is.na(reciente)), consumidores = sum(reciente, na.rm = TRUE), .groups = "drop") %>%
     mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_))
 }
-
-consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
-consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
-consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
 ```
 
 # Resultados
@@ -526,7 +482,9 @@ patrones de consumo de sustancias.
 
 ## Caracterización univariante de la muestra
 
-Como primer paso, se examina por separado la distribución de las variables categóricas (sociodemográficas y de consumo), utilizando medidas y representaciones adecuadas a su tipo.
+Como primer paso, se examina por separado la distribución de las
+variables categóricas (sociodemográficas y de consumo), utilizando
+medidas y representaciones adecuadas a su tipo.
 
 ### Variables sociodemográficas
 
@@ -568,7 +526,7 @@ izq[nrow(der), ] <- ""
 tabla <- tabla_tex(
   cbind(izq, der), compacta = TRUE,
   col.names = rep(c("Variable", "Categoría", "n (%)"), 2),
-  align = rep(c("l", "l", "r"), 2), linesep = "", position = "H"
+  align = rep(c("l", "l", "r"), 2), linesep = "", position = "!htbp"
 )
 
 lineas_tabla <- strsplit(as.character(tabla), "\n", fixed = TRUE)[[1]]
@@ -584,7 +542,7 @@ for (i in c(6, 8, 9)) {
 knitr::asis_output(paste(lineas_tabla, collapse = "\n"))
 ```
 
-La muestra presenta una mayor concentración de participantes jóvenes,
+La Tabla \ref{tab:tabla_sociodemografica} muestra una mayor concentración de participantes jóvenes,
 con un **59,6 %** de *menores de 35 años*, y una distribución
 prácticamente *equilibrada por género* (943 hombres y 942 mujeres).
 Predominan los residentes en Reino Unido (**55,38 %**) y quienes se
@@ -598,7 +556,9 @@ basadas en muestras reducidas.
 
 ### Variables de consumo
 
-Tras describir el perfil de los participantes, se analizan las tres sustancias con mayor y menor porcentaje de consumo durante el último año, junto con sus porcentajes de consumo alguna vez en la vida.
+Tras describir el perfil de los participantes, se analizan las tres
+sustancias con mayor y menor porcentaje de consumo durante el último
+año, junto con sus porcentajes de consumo alguna vez en la vida.
 
 ```{r resumen_periodo_consumo}
 resumen_consumo <- datos_consumo %>%
@@ -615,65 +575,47 @@ resumen_consumo <- datos_consumo %>%
 ```{r tabla_consumo, echo=FALSE, results='asis', tab.cap="Tres sustancias con mayor y menor porcentaje de consumo durante el último año."}
 tabla_tex(
   rbind(head(resumen_consumo, 3), tail(resumen_consumo, 3)),
-  compacta = TRUE, digits = 1, linesep = "", position = "H",
+  compacta = TRUE, digits = 1, linesep = "", position = "!htbp",
   col.names = c("Sustancia", "Alguna vez (%)", "Último año (%)")
 )
 ```
 
-```{r fig_periodo_consumo, eval=FALSE, include=FALSE, echo=FALSE, fig.width=7, fig.height=3.6, out.width="90%", fig.pos="H", fig.cap="Tiempo desde el último consumo. Se excluye Semeron"}
-orden_sustancias <- resumen_periodo_consumo %>%
-  filter(periodo == "Último año") %>% arrange(porcentaje) %>% pull(substance)
-resumen_periodo_consumo <- resumen_periodo_consumo %>% mutate(
-  substance = factor(substance, levels = orden_sustancias),
-  periodo = factor(periodo, levels = c("Último año", "Hace más de un año", "Nunca")))
-
-etiquetas_sustancias <- c(alcohol = "Alcohol", amphet = "Anfetaminas",
-  amyl = "Nitrito de amilo", benzos = "Benzodiacepinas", caff = "Cafeína",
-  cannabis = "Cannabis", choc = "Chocolate", coke = "Cocaína", crack = "Crack",
-  ecstasy = "Éxtasis", heroin = "Heroína", ketamine = "Ketamina",
-  legalh = "Legal highs", lsd = "LSD", meth = "Metadona",
-  mushrooms = "Setas alucinógenas", nicotine = "Nicotina", vsa = "Sustancias volátiles")
-
-ggplot(resumen_periodo_consumo, aes(porcentaje, substance, fill = periodo)) +
-  geom_col(width = 0.7, position = position_stack(reverse = TRUE)) +
-  geom_text(data = filter(resumen_periodo_consumo, periodo == "Último año"),
-            aes(x = 102, label = sprintf("%.1f%%", porcentaje)),
-            hjust = 0, size = 2.5, color = "grey25") +
-  scale_fill_manual(values = col_periodo_consumo,
-    breaks = c("Último año", "Hace más de un año", "Nunca")) +
-  scale_y_discrete(labels = etiquetas_sustancias) +
-  scale_x_continuous(limits = c(0, 114), breaks = seq(0, 100, 25),
-                     labels = porcentaje_eje, expand = expansion(mult = 0)) +
-  labs(x = "Porcentaje de participantes", y = NULL) +
-  tema_aed +
-  theme(panel.grid.major.y = element_blank(), axis.text = element_text(size = 8),
-        legend.text = element_text(size = 8))
-```
-
-El predominio de chocolate, cafeína y alcohol refleja su presencia en los hábitos cotidianos, aunque su consumo generalizado puede ocultar patrones de sustancias menos frecuentes en los análisis posteriores. Asimismo, haber probado una sustancia no implica necesariamente haberla consumido durante el último año.
+El predominio de chocolate, cafeína y alcohol observado en la Tabla \ref{tab:tabla_consumo} refleja su presencia en los hábitos cotidianos, aunque su consumo generalizado puede ocultar patrones de sustancias menos frecuentes en los análisis posteriores. Asimismo, haber probado una sustancia no implica necesariamente haberla consumido durante el último año.
 
 ## Control de calidad y detección de valores atípicos
 
-Antes de examinar las relaciones entre variables, se revisan posibles problemas de fiabilidad en las respuestas y puntuaciones psicológicas extremas, para determinar si requieren algún tratamiento.
+Antes de examinar las relaciones entre variables, se revisan posibles
+problemas de fiabilidad en las respuestas y puntuaciones psicológicas
+extremas, para determinar si requieren algún tratamiento.
 
 ### Fiabilidad de las respuestas
 
-En la encuesta, algunos participantes declararon haber consumido la sustancia fictia `semeron`,  lo que plantea dudas sobre la fiabilidad de sus respuestas,
-aunque no permite afirmar que el resto de la información sea falsa.
+En la encuesta, algunos participantes declararon haber consumido la
+sustancia fictia `semeron`, lo que plantea dudas sobre la fiabilidad de
+sus respuestas, aunque no permite afirmar que el resto de la información
+sea falsa.
 
 ```{r control_semeron}
 sum(datos$semer != "Never")
 ```
 
-Al identificar estos casos, se obtienen **ocho participantes**, que representan una **proporción reducida** de la muestra, aunque se mantienen identificados como respuestas poco fiables.
+Al identificar estos casos, se obtienen **ocho participantes**, que
+representan una **proporción reducida** de la muestra, aunque se
+mantienen identificados como respuestas poco fiables.
 
 ### Detección de valores atípicos
 
-A continuación, se aplican los criterios de **tres sigma**, **Hampel** y **boxplot** a las puntuaciones psicológicas para identificar valores atípicos que podrían influir en el análisis posterior, donde los casos señalados se revisarán para determinar si corresponden a errores o a perfiles extremos válidos, sin eliminarlos automáticamente.
+A continuación, se aplican los criterios de **tres sigma**, **Hampel** y
+**boxplot** a las puntuaciones psicológicas para identificar valores
+atípicos que podrían influir en el análisis posterior, donde los casos
+señalados se revisarán para determinar si corresponden a errores o a
+perfiles extremos válidos, sin eliminarlos automáticamente.
 
 ```{r deteccion_atipicos}
+rasgos <- c(big_five, "impulsive", "ss")
+
 atipicos <- datos %>%
-  select(id, all_of(c(big_five, "impulsive", "ss"))) %>%
+  select(id, all_of(rasgos)) %>%
   pivot_longer(-id, names_to = "variable", values_to = "valor") %>%
   group_by(variable) %>%
   mutate(
@@ -690,24 +632,9 @@ atipicos %>%
   group_by(variable) %>%
   summarise(across(c(sigma, hampel, boxplot), sum), .groups = "drop") %>%
   tabla_tex(
-    compacta = TRUE, linesep = "", position = "H",
+    compacta = TRUE, linesep = "", position = "!htbp",
     col.names = c("Variable", "Tres sigma", "Hampel", "Boxplot")
   )
-```
-
-```{r deteccion_outliers, include=FALSE, eval=FALSE}
-atipicos <- datos %>% select(id, all_of(c(big_five, "impulsive", "ss"))) %>% pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
-  mutate(sigma_inf = mean(valor) - 3 * sd(valor), sigma_sup = mean(valor) + 3 * sd(valor),
-           hampel_inf = median(valor) - 3 * mad(valor), hampel_sup = median(valor) + 3 * mad(valor),
-            boxplot_inf = quantile(valor, .25) - 1.5 * IQR(valor),
-            boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>% ungroup() %>%
-     pivot_longer(cols = ends_with(c("_inf", "_sup")),names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>% mutate(atipico = valor < inf | valor > sup)
-
-atipicos %>% group_by(variable, metodo) %>%
-  summarise(n = sum(atipico, na.rm = TRUE), .groups = "drop") %>%
-  pivot_wider(names_from = metodo, values_from = n) %>%
-  select(variable, boxplot, hampel, sigma) %>%
-  tabla_tex(col.names = c("Variable", "Boxplot", "Hampel", "Sigma"))
 ```
 
 ```{r include=FALSE}
@@ -721,7 +648,6 @@ atipicos %>% group_by(variable, metodo) %>%
 ```
 
 ```{r preparar_densidad_cscore, include=FALSE}
-rasgos <- c(big_five, "impulsive", "ss")
 valores_cscore <- atipicos %>% filter(variable == "cscore")
 x <- valores_cscore$valor
 limites_cscore <- tibble(
@@ -745,7 +671,7 @@ puntos_cscore <- valores_cscore %>%
   ) %>% arrange(grupo == "Declara Semeron")
 ```
 
-```{r fig_densidad_cscore, echo=FALSE, fig.width=7, fig.height=3, out.width="85%", fig.pos="H", fig.cap="Distribución de cscore y límites de cada criterio (líneas discontinuas)."}
+```{r fig_densidad_cscore, echo=FALSE, fig.width=7, fig.height=3, out.width="85%", fig.pos="!htbp", fig.cap="Distribución de cscore y límites de cada criterio (líneas discontinuas)."}
 ggplot(puntos_cscore, aes(densidad, valor)) +
   geom_ribbon(data = curva_cscore, aes(y = valor, xmin = 0, xmax = densidad),
               inherit.aes = FALSE, orientation = "y", fill = "grey93") +
@@ -761,7 +687,16 @@ ggplot(puntos_cscore, aes(densidad, valor)) +
   tema_aed + theme(legend.text = element_text(size = 8))
 ```
 
-El ejemplo de `cscore` muestra cómo el criterio boxplot establece un límite inferior más alto y señala más puntuaciones bajas que los otros métodos. Los participantes que declararon consumo de `semeron`, conservados pero señalados como potencialmente poco fiables, tampoco resultan atípicos en esta variable. Esto distingue los problemas de fiabilidad de las respuestas de la presencia de puntuaciones extremas y, por tanto, estas observaciones se convervan, ya que su carácter extremo no constituye por sí solo evidencia de error y eliminarlas podría reducir la variabilidad de los perfiles psicológicos de la muestra.
+La Tabla \ref{tab:tabla_atipicos} muestra que el número de puntuaciones señaladas varía según el criterio aplicado. La Figura \ref{fig:fig_densidad_cscore} ilustra estas diferencias en `cscore`, donde el criterio boxplot establece un
+límite inferior más alto y señala más puntuaciones bajas que los otros
+métodos. Los participantes que declararon consumo de `semeron`,
+conservados pero señalados como potencialmente poco fiables, tampoco
+resultan atípicos en esta variable, como muestran los puntos en azul
+oscuro. Esto distingue los problemas de fiabilidad de las respuestas de
+la presencia de puntuaciones extremas y, por tanto, estas observaciones
+se convervan, ya que su carácter extremo no constituye por sí solo
+evidencia de error y eliminarlas podría reducir la variabilidad de los
+perfiles psicológicos de la muestra.
 
 ## Rasgos psicológicos y último consumo de sustancias
 
@@ -769,7 +704,8 @@ Para explorar cómo se asocian los rasgos psicológicos con el último
 consumo declarado de cada sustancia, se calculan correlaciones de
 Spearman. Las categorías ordenadas incluyen desde «Nunca» hasta «Último
 día», por lo que los coeficientes positivos indican una asociación con
-categorías de consumo más recientes y los negativos, con menos recientes.
+categorías de consumo más recientes y los negativos, con menos
+recientes.
 
 ```{r correlaciones_sustancias, warning=FALSE, message=FALSE}
 sustancias_cor <- setdiff(substances, "semer")
@@ -781,26 +717,43 @@ correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
 matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 ```
 
-```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.pos="H", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
+```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.pos="!htbp", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
 dibujar_correlaciones(matriz_sustancias)
 ```
 
-En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido por varias sustancias, con asociaciones positivas con la búsqueda de sensaciones y negativas con la responsabilidad. La apertura también forma parte de este patrón, especialmente en cannabis, setas y LSD. Esto sugiere que determinadas características psicológicas se relacionan con categorías de consumo más recientes, aunque la intensidad de esa relación depende de la sustancia. El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se observó en el análisis univariante, presentan un consumo reciente muy extendido reduciendo el contraste entre distintos perfiles.
+En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido
+por varias sustancias, con asociaciones positivas con la búsqueda de
+sensaciones y negativas con la responsabilidad. La apertura también
+forma parte de este patrón, especialmente en cannabis, setas y LSD. Esto
+sugiere que determinadas características psicológicas se relacionan con
+categorías de consumo más recientes, aunque la intensidad de esa
+relación depende de la sustancia.
 
-## Descripción de la muestra y preparación de comparaciones
-
-```{r consumo_reciente, results="hide", warning=FALSE, message=FALSE}
-datos_consumo <- datos_families %>%
-  filter(substance != "semer") %>%
-  distinct(id, substance, .keep_all = TRUE) %>%
-  mutate(reciente = if_else(is.na(consumption), NA,
-                            as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
-
-```
+El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se
+observó en el análisis univariante, presentan un consumo reciente muy
+extendido. Esta presencia generalizada puede reducir el contraste entre
+participantes con distintos perfiles psicológicos, contribuyendo a las
+correlaciones próximas a cero.
 
 ## Consumo reciente según características sociodemográficas
 
-### Relación entre la edad y el consumo reciente
+```{r preparar_consumo_familias}
+# Mismas exclusiones que en el análisis original por nivel educativo.
+excluir_familias <- c("alcohol", "caff", "nicotine", "choc", "semer", "legalh")
+
+# Una fila por participante y familia; se consume si alguna respuesta es positiva.
+datos_consumo_familias <- datos_consumo %>%
+  filter(!substance %in% excluir_familias, !is.na(family)) %>%
+  group_by(id, age, gender, education, country, ethnicity, family) %>%
+  summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
+            else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
+```
+
+### Edad
+
+```{r resumen_consumo_edad}
+consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
+```
 
 ```{r, echo=FALSE}
 etiquetas_familias <- c(
@@ -876,14 +829,40 @@ grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
 grafico_edad_familias
 ```
 
-La Figura \ref{fig:consumo_edad} muestra que **el consumo reciente declarado es generalmente menor en los grupos de mayor edad**, aunque las diferencias dependen de la sustancia. Los **cannabinoides presentan la mayor diferencia entre jóvenes y mayores**, seguidos de psicodélicos, estimulantes y empatógenos. En varias familias, las mayores caídas aparecen entre los grupos de 18–24 y 25–34 años. El **alcohol y la nicotina mantienen una presencia considerable en todas las edades**. En cambio, psicodélicos, estimulantes, empatógenos y disociativos presentan porcentajes observados nulos en el último grupo. Estas cifras indican consumo durante los últimos doce meses, pero no permiten conocer su frecuencia, cantidad ni la existencia de dependencia.
+La Figura \ref{fig:consumo_edad} muestra que **el consumo reciente
+declarado es generalmente menor en los grupos de mayor edad**, aunque
+las diferencias dependen de la sustancia. Los **cannabinoides presentan
+la mayor diferencia entre jóvenes y mayores**, seguidos de psicodélicos,
+estimulantes y empatógenos. En varias familias, las mayores caídas
+aparecen entre los grupos de 18–24 y 25–34 años. El **alcohol y la
+nicotina mantienen una presencia considerable en todas las edades**. En
+cambio, psicodélicos, estimulantes, empatógenos y disociativos presentan
+porcentajes observados nulos en el último grupo. Estas cifras indican
+consumo durante los últimos doce meses, pero no permiten conocer su
+frecuencia, cantidad ni la existencia de dependencia.
 
-La principal excepción al descenso general aparece en los **depresores, cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65**. Una posible explicación sería la presencia de benzodiacepinas y su uso por prescripción, aunque esta hipótesis no puede comprobarse con la gráfica. También se observa un pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a variabilidad muestral y no necesariamente a una tendencia real.
+La principal excepción al descenso general aparece en los **depresores,
+cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de
+65**. Una posible explicación sería la presencia de benzodiacepinas y su
+uso por prescripción, aunque esta hipótesis no puede comprobarse con la
+gráfica. También se observa un pequeño repunte de cannabinoides del 26 %
+al 28 %, que podría deberse a variabilidad muestral y no necesariamente
+a una tendencia real.
 
-Finalmente, las diferencias deben interpretarse con cautela porque **se comparan personas distintas, no la evolución de los mismos participantes**. La escasa representación de mayores de 65 años hace que unas pocas respuestas modifiquen considerablemente sus porcentajes, y **un 0 % no demuestra ausencia de consumo en la población**. Por tanto, los resultados muestran una *asociación descriptiva entre edad y consumo en esta muestra*, pero **no permiten afirmar que envejecer provoque su abandono** ni generalizar directamente las cifras a toda la población.
+Finalmente, las diferencias deben interpretarse con cautela porque **se
+comparan personas distintas, no la evolución de los mismos
+participantes**. La escasa representación de mayores de 65 años hace que
+unas pocas respuestas modifiquen considerablemente sus porcentajes, y
+**un 0 % no demuestra ausencia de consumo en la población**. Por tanto,
+los resultados muestran una *asociación descriptiva entre edad y consumo
+en esta muestra*, pero **no permiten afirmar que envejecer provoque su
+abandono** ni generalizar directamente las cifras a toda la población.
 
 ### Relación entre el género y el consumo reciente
 
+```{r resumen_consumo_genero}
+consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
+```
 ```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales.\\label{fig:consumo_genero}"}
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
@@ -894,21 +873,28 @@ grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>%
 grafico_genero
 ```
 
-En la Figura \ref{fig:consumo_genero} se observa como el chocolate, la cafeína y el alcohol presentan
-porcentajes de consumo muy elevados y casi solapados entre
-hombres y mujeres. **La nicotina constituye una excepción entre las
-sustancias de consumo socialmente extendido**, ya que muestra un
-porcentaje claramente superior en los hombres. En el resto de las sustancias representadas también se observa mayor
-consumo reciente declarado entre los hombres. La separación es
-especialmente visible en cannabis y *legal highs*, seguidas de
-sustancias como éxtasis, anfetaminas y setas. Las mayores diferencias en puntos porcentuales aparecen en sustancias con un
-consumo relativamente extendido, fuera del grupo de las más consumidas. En las sustancias menos consumidas, como heroína, sustancias volátiles y
-crack, los porcentajes de ambos grupos se vuelven a aproximar. Sin embargo, **una
+En la Figura \ref{fig:consumo_genero} se observa como el chocolate, la
+cafeína y el alcohol presentan porcentajes de consumo muy elevados y
+casi solapados entre hombres y mujeres. **La nicotina constituye una
+excepción entre las sustancias de consumo socialmente extendido**, ya
+que muestra un porcentaje claramente superior en los hombres. En el
+resto de las sustancias representadas también se observa mayor consumo
+reciente declarado entre los hombres. La separación es especialmente
+visible en cannabis y *legal highs*, seguidas de sustancias como
+éxtasis, anfetaminas y setas. Las mayores diferencias en puntos
+porcentuales aparecen en sustancias con un consumo relativamente
+extendido, fuera del grupo de las más consumidas. En las sustancias
+menos consumidas, como heroína, sustancias volátiles y crack, los
+porcentajes de ambos grupos se vuelven a aproximar. Sin embargo, **una
 diferencia absoluta pequeña no implica necesariamente una diferencia
 relativa pequeña**: cuando el consumo es poco frecuente, unos pocos
 puntos porcentuales pueden representar una proporción considerable.
 
 ## Consumo reciente según nivel educativo
+
+```{r resumen_consumo_educacion}
+consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
+```
 
 Como se puede observar en la Figura \ref{fig:consumo_educacion}, existe
 una tendencia general al aumento del consumo de sustancias en los
@@ -1021,7 +1007,7 @@ grafico_psicometria <- ggplot(policonsumo_grafico, aes(grupo, valor, fill = grup
 grafico_psicometria
 ```
 
-Podemos observar una **asociación positiva entre ambos rasgos
+En la Figura \ref{fig:fig_psicometria_policonsumo} se observa una **asociación positiva entre ambos rasgos
 psicológicos y el número de sustancias consumidas**, aunque con
 diferencias en su comportamiento.
 
