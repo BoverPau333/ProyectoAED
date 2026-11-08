@@ -172,17 +172,11 @@ col_consumo <- c(
   "4+"  = "#08519C"
 )
 
-# Periodo del último consumo: azul y naranja de la paleta común, y gris.
-col_periodo_consumo <- c("Último año" = "#0072B2",
-                        "Hace más de un año" = "#D95F02", "Nunca" = "#DDDDDD")
-
 col_paneles <- c(col_familias, col_sustancias[c("nicotine", "alcohol")])
 col_genero <- c(Male = "#0072B2", Female = "#D95F02")
 col_atipicos <- c("Resto" = "#9ECAE1", "Atípico" = "#D55E00",
                  "Declara Semeron" = "#08519C")
 
-col_grupos <- c("Consumo socialmente extendido" = "#0072B2",
-                "Otras sustancias" = "#D95F02")
 col_correlacion <- colorRampPalette(c("#D55E00", "white", "#0072B2"))(100)
 
 porcentaje_eje <- function(x) paste0(x, "%")
@@ -473,21 +467,12 @@ uci_classification <- data.frame(
 ### Reestructuración de los datos
 
 Hasta ahora, el conjunto de datos presenta un formato ancho, con una
-columna de consumo por sustancia. Para facilitar el análisis por
-sustancias y familias farmacológicas, se utiliza `pivot_longer()` para
-reorganizarlo en formato largo, agrupando las variables de consumo en
-dos columnas: la sustancia y la categoría temporal de su último consumo.
-Así, cada fila corresponde a un participante y una sustancia,
-conservándose las características sociodemográficas y psicológicas del
-participante.
+columna de consumo por sustancia. Mediante `pivot_longer()`, las columnas de consumo se reorganizan en formato largo, 
+con una fila por participante y sustancia y dos columnas que identifican la sustancia 
+y su último consumo. Se conservan las características personales 
+y se incorpora la familia farmacológica mediante `left_join()`.
 
-Finalmente, mediante `left_join()`, se incorpora la familia
-farmacológica correspondiente a cada sustancia, completando así el
-preprocesamiento y obteniendo un conjunto de datos preparado para el
-análisis exploratorio tanto por sustancias individuales como por
-familias.
-
-```{r construccion_datos_consumo, results="hide", warning=FALSE, message=FALSE}
+```{r construccion_datos_families, results="hide", warning=FALSE, message=FALSE}
 datos_families <- datos %>%
   pivot_longer(
     cols = all_of(uci_classification$substance),
@@ -496,37 +481,18 @@ datos_families <- datos %>%
   left_join(uci_classification, by = "substance")
 ```
 
-```{r}
-# Consumo reciente por sustancia: conservamos esta tabla para otros análisis.
-datos_consumo <- datos_families %>%
-  filter(substance != "semer") %>%
-  distinct(id, substance, .keep_all = TRUE) %>%
-  mutate(reciente = if_else(is.na(consumption), NA,
-                            as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
+A partir de esta estructura, se crea `datos_consumo`, excluyendo las filas de `semeron` por tratarse de una sustancia ficticia. Además, se define el consumo reciente como el declarado durante los últimos doce meses y una función para resumirlo mediante frecuencias y porcentajes por grupo.
 
-# Mismas exclusiones que en el análisis original por nivel educativo.
-excluir_familias <- c("alcohol", "caff", "nicotine", "choc", "semer", "legalh")
+```{r construccion_datos_consumo, results="hide", warning=FALSE, message=FALSE}
+# Consumo reciente por sustancia
+datos_consumo <- datos_families %>% filter(substance != "semer") %>% distinct(id, substance, .keep_all = TRUE) %>% mutate(reciente = if_else(is.na(consumption), NA, as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
 
-# Una fila por participante y familia; se consume si alguna respuesta es positiva.
-datos_consumo_familias <- datos_consumo %>%
-  filter(!substance %in% excluir_familias, !is.na(family)) %>%
-  group_by(id, age, gender, education, country, ethnicity, family) %>%
-  summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
-            else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
-
-#Resumen reutilizable para edad, género, etnia o educación.
+# Resumen
 resumir_consumo <- function(ds, perfil, categoria) {
-  ds %>%
-    filter(!is.na(.data[[perfil]])) %>%
-    group_by(across(all_of(c(perfil, categoria)))) %>%
-    summarise(n = sum(!is.na(reciente)), consumidores = sum(reciente, na.rm = TRUE),
-              .groups = "drop") %>%
+  ds %>% filter(!is.na(.data[[perfil]])) %>% group_by(across(all_of(c(perfil, categoria)))) %>%
+    summarise(n = sum(!is.na(reciente)), consumidores = sum(reciente, na.rm = TRUE), .groups = "drop") %>%
     mutate(porcentaje = if_else(n > 0, 100 * consumidores / n, NA_real_))
 }
-
-consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
-consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
-consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
 ```
 
 # Resultados
@@ -631,36 +597,6 @@ tabla_tex(
 )
 ```
 
-```{r fig_periodo_consumo, eval=FALSE, include=FALSE, echo=FALSE, fig.width=7, fig.height=3.6, out.width="90%", fig.pos="H", fig.cap="Tiempo desde el último consumo. Se excluye Semeron"}
-orden_sustancias <- resumen_periodo_consumo %>%
-  filter(periodo == "Último año") %>% arrange(porcentaje) %>% pull(substance)
-resumen_periodo_consumo <- resumen_periodo_consumo %>% mutate(
-  substance = factor(substance, levels = orden_sustancias),
-  periodo = factor(periodo, levels = c("Último año", "Hace más de un año", "Nunca")))
-
-etiquetas_sustancias <- c(alcohol = "Alcohol", amphet = "Anfetaminas",
-  amyl = "Nitrito de amilo", benzos = "Benzodiacepinas", caff = "Cafeína",
-  cannabis = "Cannabis", choc = "Chocolate", coke = "Cocaína", crack = "Crack",
-  ecstasy = "Éxtasis", heroin = "Heroína", ketamine = "Ketamina",
-  legalh = "Legal highs", lsd = "LSD", meth = "Metadona",
-  mushrooms = "Setas alucinógenas", nicotine = "Nicotina", vsa = "Sustancias volátiles")
-
-ggplot(resumen_periodo_consumo, aes(porcentaje, substance, fill = periodo)) +
-  geom_col(width = 0.7, position = position_stack(reverse = TRUE)) +
-  geom_text(data = filter(resumen_periodo_consumo, periodo == "Último año"),
-            aes(x = 102, label = sprintf("%.1f%%", porcentaje)),
-            hjust = 0, size = 2.5, color = "grey25") +
-  scale_fill_manual(values = col_periodo_consumo,
-    breaks = c("Último año", "Hace más de un año", "Nunca")) +
-  scale_y_discrete(labels = etiquetas_sustancias) +
-  scale_x_continuous(limits = c(0, 114), breaks = seq(0, 100, 25),
-                     labels = porcentaje_eje, expand = expansion(mult = 0)) +
-  labs(x = "Porcentaje de participantes", y = NULL) +
-  tema_aed +
-  theme(panel.grid.major.y = element_blank(), axis.text = element_text(size = 8),
-        legend.text = element_text(size = 8))
-```
-
 El predominio de chocolate, cafeína y alcohol refleja su presencia en los hábitos cotidianos, aunque su consumo generalizado puede ocultar patrones de sustancias menos frecuentes en los análisis posteriores. Asimismo, haber probado una sustancia no implica necesariamente haberla consumido durante el último año.
 
 ## Control de calidad y detección de valores atípicos
@@ -683,8 +619,10 @@ Al identificar estos casos, se obtienen **ocho participantes**, que representan 
 A continuación, se aplican los criterios de **tres sigma**, **Hampel** y **boxplot** a las puntuaciones psicológicas para identificar valores atípicos que podrían influir en el análisis posterior, donde los casos señalados se revisarán para determinar si corresponden a errores o a perfiles extremos válidos, sin eliminarlos automáticamente.
 
 ```{r deteccion_atipicos}
+rasgos <- c(big_five, "impulsive", "ss")
+
 atipicos <- datos %>%
-  select(id, all_of(c(big_five, "impulsive", "ss"))) %>%
+  select(id, all_of(rasgos)) %>%
   pivot_longer(-id, names_to = "variable", values_to = "valor") %>%
   group_by(variable) %>%
   mutate(
@@ -706,21 +644,6 @@ atipicos %>%
   )
 ```
 
-```{r deteccion_outliers, include=FALSE, eval=FALSE}
-atipicos <- datos %>% select(id, all_of(c(big_five, "impulsive", "ss"))) %>% pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
-  mutate(sigma_inf = mean(valor) - 3 * sd(valor), sigma_sup = mean(valor) + 3 * sd(valor),
-           hampel_inf = median(valor) - 3 * mad(valor), hampel_sup = median(valor) + 3 * mad(valor),
-            boxplot_inf = quantile(valor, .25) - 1.5 * IQR(valor),
-            boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>% ungroup() %>%
-     pivot_longer(cols = ends_with(c("_inf", "_sup")),names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>% mutate(atipico = valor < inf | valor > sup)
-
-atipicos %>% group_by(variable, metodo) %>%
-  summarise(n = sum(atipico, na.rm = TRUE), .groups = "drop") %>%
-  pivot_wider(names_from = metodo, values_from = n) %>%
-  select(variable, boxplot, hampel, sigma) %>%
-  tabla_tex(col.names = c("Variable", "Boxplot", "Hampel", "Sigma"))
-```
-
 ```{r include=FALSE}
 # formato_densidad <- function(colores) {
 #   list(
@@ -732,7 +655,6 @@ atipicos %>% group_by(variable, metodo) %>%
 ```
 
 ```{r preparar_densidad_cscore, include=FALSE}
-rasgos <- c(big_five, "impulsive", "ss")
 valores_cscore <- atipicos %>% filter(variable == "cscore")
 x <- valores_cscore$valor
 limites_cscore <- tibble(
@@ -801,20 +723,25 @@ En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido por va
 El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se observó en el análisis univariante, presentan un consumo reciente muy extendido. Esta presencia generalizada puede reducir el contraste entre participantes con distintos perfiles psicológicos, contribuyendo a las correlaciones próximas a cero.
 
 
-## Descripción de la muestra y preparación de comparaciones
-
-```{r consumo_reciente, results="hide", warning=FALSE, message=FALSE}
-datos_consumo <- datos_families %>%
-  filter(substance != "semer") %>%
-  distinct(id, substance, .keep_all = TRUE) %>%
-  mutate(reciente = if_else(is.na(consumption), NA,
-                            as.character(consumption) %in% c("Last year", "Last month", "Last week", "Last day")))
-
-```
-
 ## Consumo reciente según características sociodemográficas
 
+```{r preparar_consumo_familias}
+# Mismas exclusiones que en el análisis original por nivel educativo.
+excluir_familias <- c("alcohol", "caff", "nicotine", "choc", "semer", "legalh")
+
+# Una fila por participante y familia; se consume si alguna respuesta es positiva.
+datos_consumo_familias <- datos_consumo %>%
+  filter(!substance %in% excluir_familias, !is.na(family)) %>%
+  group_by(id, age, gender, education, country, ethnicity, family) %>%
+  summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
+            else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
+```
+
 ### Edad
+
+```{r resumen_consumo_edad}
+consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
+```
 
 ```{r, echo=FALSE}
 etiquetas_familias <- c(
@@ -898,6 +825,9 @@ Finalmente, las diferencias deben interpretarse con cautela porque **se comparan
 
 ### Género
 
+```{r resumen_consumo_genero}
+consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
+```
 ```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales.\\label{fig:consumo_genero}"}
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
@@ -923,6 +853,10 @@ relativa pequeña**: cuando el consumo es poco frecuente, unos pocos
 puntos porcentuales pueden representar una proporción considerable.
 
 ## Consumo reciente según nivel educativo
+
+```{r resumen_consumo_educacion}
+consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
+```
 
 Como se puede observar en la Figura \ref{fig:consumo_educacion}, existe
 una tendencia general al aumento del consumo de sustancias en los
