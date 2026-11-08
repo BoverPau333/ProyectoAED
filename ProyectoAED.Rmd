@@ -533,7 +533,7 @@ izq[nrow(der), ] <- ""
 tabla <- tabla_tex(
   cbind(izq, der), compacta = TRUE,
   col.names = rep(c("Variable", "Categoría", "n (%)"), 2),
-  align = rep(c("l", "l", "r"), 2), linesep = "", position = "H"
+  align = rep(c("l", "l", "r"), 2), linesep = "", position = "!htbp"
 )
 
 lineas_tabla <- strsplit(as.character(tabla), "\n", fixed = TRUE)[[1]]
@@ -582,7 +582,7 @@ resumen_consumo <- datos_consumo %>%
 ```{r tabla_consumo, echo=FALSE, results='asis', tab.cap="Tres sustancias con mayor y menor porcentaje de consumo durante el último año."}
 tabla_tex(
   rbind(head(resumen_consumo, 3), tail(resumen_consumo, 3)),
-  compacta = TRUE, digits = 1, linesep = "", position = "H",
+  compacta = TRUE, digits = 1, linesep = "", position = "!htbp",
   col.names = c("Sustancia", "Alguna vez (%)", "Último año (%)")
 )
 ```
@@ -639,7 +639,7 @@ atipicos %>%
   group_by(variable) %>%
   summarise(across(c(sigma, hampel, boxplot), sum), .groups = "drop") %>%
   tabla_tex(
-    compacta = TRUE, linesep = "", position = "H",
+    compacta = TRUE, linesep = "", position = "!htbp",
     col.names = c("Variable", "Tres sigma", "Hampel", "Boxplot")
   )
 ```
@@ -678,7 +678,7 @@ puntos_cscore <- valores_cscore %>%
   ) %>% arrange(grupo == "Declara Semeron")
 ```
 
-```{r fig_densidad_cscore, echo=FALSE, fig.width=7, fig.height=3, out.width="85%", fig.pos="H", fig.cap="Distribución de cscore y límites de cada criterio (líneas discontinuas)."}
+```{r fig_densidad_cscore, echo=FALSE, fig.width=7, fig.height=3, out.width="85%", fig.pos="!htbp", fig.cap="Distribución de cscore y límites de cada criterio (líneas discontinuas)."}
 ggplot(puntos_cscore, aes(densidad, valor)) +
   geom_ribbon(data = curva_cscore, aes(y = valor, xmin = 0, xmax = densidad),
               inherit.aes = FALSE, orientation = "y", fill = "grey93") +
@@ -724,7 +724,7 @@ correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
 matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 ```
 
-```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.pos="H", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
+```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.pos="!htbp", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
 dibujar_correlaciones(matriz_sustancias)
 ```
 
