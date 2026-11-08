@@ -549,7 +549,7 @@ for (i in c(6, 8, 9)) {
 knitr::asis_output(paste(lineas_tabla, collapse = "\n"))
 ```
 
-La muestra presenta una mayor concentración de participantes jóvenes,
+La Tabla \ref{tab:tabla_sociodemografica} muestra una mayor concentración de participantes jóvenes,
 con un **59,6 %** de *menores de 35 años*, y una distribución
 prácticamente *equilibrada por género* (943 hombres y 942 mujeres).
 Predominan los residentes en Reino Unido (**55,38 %**) y quienes se
@@ -587,7 +587,7 @@ tabla_tex(
 )
 ```
 
-El predominio de chocolate, cafeína y alcohol refleja su presencia en los hábitos cotidianos, aunque su consumo generalizado puede ocultar patrones de sustancias menos frecuentes en los análisis posteriores. Asimismo, haber probado una sustancia no implica necesariamente haberla consumido durante el último año.
+El predominio de chocolate, cafeína y alcohol observado en la Tabla \ref{tab:tabla_consumo} refleja su presencia en los hábitos cotidianos, aunque su consumo generalizado puede ocultar patrones de sustancias menos frecuentes en los análisis posteriores. Asimismo, haber probado una sustancia no implica necesariamente haberla consumido durante el último año.
 
 ## Control de calidad y detección de valores atípicos
 
@@ -694,7 +694,7 @@ ggplot(puntos_cscore, aes(densidad, valor)) +
   tema_aed + theme(legend.text = element_text(size = 8))
 ```
 
-El ejemplo de `cscore` muestra cómo el criterio boxplot establece un
+La Tabla \ref{tab:tabla_atipicos} muestra que el número de puntuaciones señaladas varía según el criterio aplicado. La Figura \ref{fig:fig_densidad_cscore} ilustra estas diferencias en `cscore`, donde el criterio boxplot establece un
 límite inferior más alto y señala más puntuaciones bajas que los otros
 métodos. Los participantes que declararon consumo de `semeron`,
 conservados pero señalados como potencialmente poco fiables, tampoco
@@ -1014,7 +1014,7 @@ grafico_psicometria <- ggplot(policonsumo_grafico, aes(grupo, valor, fill = grup
 grafico_psicometria
 ```
 
-Podemos observar una **asociación positiva entre ambos rasgos
+En la Figura \ref{fig:fig_psicometria_policonsumo} se observa una **asociación positiva entre ambos rasgos
 psicológicos y el número de sustancias consumidas**, aunque con
 diferencias en su comportamiento.
 
