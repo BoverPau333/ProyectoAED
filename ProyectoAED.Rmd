@@ -84,10 +84,13 @@ comportamientos.
 El objetivo de este trabajo es analizar cómo varía el consumo según el
 perfil de los participantes, prestando especial atención a la edad, el
 género, la etnia y el nivel educativo. Asimismo, se estudia la relación
-entre determinados rasgos psicológicos y el policonsumo, buscando
-identificar asociaciones sin establecer relaciones causales.
+de los rasgos psicológicos con el último consumo de cada sustancia y
+con el policonsumo, buscando identificar asociaciones sin establecer
+relaciones causales.
 
 # Materiales y métodos
+
+En este apartado se describen las fuentes de datos y los procedimientos utilizados para preparar las variables antes del análisis.
 
 ```{r mdpi_setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -184,11 +187,11 @@ col_correlacion <- colorRampPalette(c("#D55E00", "white", "#0072B2"))(100)
 
 porcentaje_eje <- function(x) paste0(x, "%")
 
-dibujar_correlaciones <- function(matriz) {
-  corrplot::corrplot(matriz, is.corr = TRUE, col = col_correlacion,
+dibujar_correlaciones <- function(matriz, ...) {
+  corrplot(matriz, is.corr = TRUE, col = col_correlacion,
                     method = "color", addCoef.col = "black",
                     number.cex = 0.7, tl.cex = 0.8,
-                    tl.col = "grey25", tl.srt = 45)
+                    tl.col = "grey25", tl.srt = 45, ...)
 }
 
 #Funcion auxiliar para generar una tabla
@@ -606,23 +609,29 @@ basadas en muestras reducidas.
 
 ### Variables de consumo
 
-Tras describir el perfil de los participantes, se describe el consumo de cada sustancia distinguiendo entre quienes nunca la han consumido, quienes lo hicieron hace más de un año y quienes declaran consumo durante los últimos doce meses.
+Tras describir el perfil de los participantes, se analizan las tres sustancias con mayor y menor porcentaje de consumo durante el último año, junto con sus porcentajes de consumo alguna vez en la vida.
 
 ```{r resumen_periodo_consumo}
-resumen_periodo_consumo <- datos_consumo %>%
-  filter(!is.na(consumption)) %>%
-  mutate(periodo = case_when(
-    consumption == "Never" ~ "Nunca",
-    reciente ~ "Último año",
-    TRUE ~ "Hace más de un año"
-  )) %>%
-  count(substance, periodo) %>%
+resumen_consumo <- datos_consumo %>%
+  filter(substance != "semer", !is.na(consumption)) %>%
   group_by(substance) %>%
-  mutate(porcentaje = 100 * n / sum(n)) %>%
-  ungroup()
+  summarise(
+    Alguna_vez = 100 * mean(consumption != "Never"),
+    Ultimo_anio = 100 * mean(reciente),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(Ultimo_anio))
 ```
 
-```{r fig_periodo_consumo, echo=FALSE, fig.width=7, fig.height=3.6, out.width="90%", fig.pos="H", fig.cap="Tiempo desde el último consumo. Se excluye Semeron"}
+```{r tabla_consumo, echo=FALSE, results='asis', tab.cap="Tres sustancias con mayor y menor porcentaje de consumo durante el último año."}
+tabla_tex(
+  rbind(head(resumen_consumo, 3), tail(resumen_consumo, 3)),
+  compacta = TRUE, digits = 1, linesep = "", position = "H",
+  col.names = c("Sustancia", "Alguna vez (%)", "Último año (%)")
+)
+```
+
+```{r fig_periodo_consumo, eval=FALSE, include=FALSE, echo=FALSE, fig.width=7, fig.height=3.6, out.width="90%", fig.pos="H", fig.cap="Tiempo desde el último consumo. Se excluye Semeron"}
 orden_sustancias <- resumen_periodo_consumo %>%
   filter(periodo == "Último año") %>% arrange(porcentaje) %>% pull(substance)
 resumen_periodo_consumo <- resumen_periodo_consumo %>% mutate(
@@ -665,22 +674,15 @@ aunque no permite afirmar que el resto de la información sea falsa.
 
 ```{r control_semeron}
 sum(datos$semer != "Never")
-
-max(sapply(setdiff(substances, "semer"), function(s) {
-  consumo <- datos[[s]] %in% c("Last year", "Last month", "Last week", "Last day")
-  abs(mean(consumo) - mean(consumo[datos$semer == "Never"]))
-})) * 100
 ```
 
-Al identificar estos casos, se obtienen **ocho participantes**, que representan una **proporción reducida** de la muestra. Su exclusión apenas modifica los porcentajes de consumo reciente (máximo de 0,22 puntos porcentuales), por lo que se conservan sus registros, manteniéndolos identificados como respuestas poco fiables.
+Al identificar estos casos, se obtienen **ocho participantes**, que representan una **proporción reducida** de la muestra, aunque se mantienen identificados como respuestas poco fiables.
 
 ### Detección de valores atípicos
 
 A continuación, se aplican los criterios de **tres sigma**, **Hampel** y **boxplot** a las puntuaciones psicológicas para identificar valores atípicos que podrían influir en el análisis posterior, donde los casos señalados se revisarán para determinar si corresponden a errores o a perfiles extremos válidos, sin eliminarlos automáticamente.
 
 ```{r deteccion_atipicos}
-rasgos <- c(big_five, "impulsive", "ss")
-
 atipicos <- datos %>%
   select(id, all_of(c(big_five, "impulsive", "ss"))) %>%
   pivot_longer(-id, names_to = "variable", values_to = "valor") %>%
@@ -705,19 +707,18 @@ atipicos %>%
 ```
 
 ```{r deteccion_outliers, include=FALSE, eval=FALSE}
-# rasgos <- c(big_five, "impulsive", "ss")
-# outliers <- datos %>% select(id, all_of(rasgos)) %>% pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
-#   mutate(sigma_inf = mean(valor) - 3 * sd(valor), sigma_sup = mean(valor) + 3 * sd(valor),
-#          hampel_inf = median(valor) - 3 * mad(valor), hampel_sup = median(valor) + 3 * mad(valor),
-#          boxplot_inf = quantile(valor, .25) - 1.5 * IQR(valor),
-#          boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>% ungroup() %>%
-#   pivot_longer(cols = ends_with(c("_inf", "_sup")),names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>% mutate(atipico = valor < inf | valor > sup)
-#
-# outliers %>% group_by(variable, metodo) %>%
-#   summarise(n = sum(atipico, na.rm = TRUE), .groups = "drop") %>%
-#   pivot_wider(names_from = metodo, values_from = n) %>%
-#   select(variable, boxplot, hampel, sigma) %>%
-#   tabla_tex(col.names = c("Variable", "Boxplot", "Hampel", "Sigma"))
+atipicos <- datos %>% select(id, all_of(c(big_five, "impulsive", "ss"))) %>% pivot_longer(-id, names_to = "variable", values_to = "valor") %>% group_by(variable) %>%
+  mutate(sigma_inf = mean(valor) - 3 * sd(valor), sigma_sup = mean(valor) + 3 * sd(valor),
+           hampel_inf = median(valor) - 3 * mad(valor), hampel_sup = median(valor) + 3 * mad(valor),
+            boxplot_inf = quantile(valor, .25) - 1.5 * IQR(valor),
+            boxplot_sup = quantile(valor, .75) + 1.5 * IQR(valor)) %>% ungroup() %>%
+     pivot_longer(cols = ends_with(c("_inf", "_sup")),names_to = c("metodo", ".value"), names_pattern = "(.*)_(inf|sup)") %>% mutate(atipico = valor < inf | valor > sup)
+
+atipicos %>% group_by(variable, metodo) %>%
+  summarise(n = sum(atipico, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = metodo, values_from = n) %>%
+  select(variable, boxplot, hampel, sigma) %>%
+  tabla_tex(col.names = c("Variable", "Boxplot", "Hampel", "Sigma"))
 ```
 
 ```{r include=FALSE}
@@ -730,33 +731,56 @@ atipicos %>%
 # }
 ```
 
-```{r fig_densidad_cscore, eval=FALSE, include=FALSE, out.width="85%", fig.cap="Distribución de cscore y umbrales de detección. Los puntos se desplazan ligeramente en horizontal para reducir el solapamiento."}
-# puntos <- outliers %>% filter(variable == "cscore") %>% mutate(grupo = case_when(
-#     id %in% datos$id[datos$semer != "Never"] ~ "Declara Semeron", atipico ~ "Atípico", TRUE ~ "Resto"
-#     )) %>% arrange(grupo == "Declara Semeron")
-#
-# limites <- puntos %>% distinct(metodo, inf, sup)
-# valores <- puntos %>% distinct(id, valor)
-# d <- density(valores$valor, na.rm = TRUE)
-# curva <- tibble(valor = d$x, densidad = d$y)
-# puntos <- puntos %>% mutate(densidad = approx(d$x, d$y, xout = valor)$y)
-#
-# grafico_densidad <- ggplot(puntos, aes(densidad, valor)) +
-#   geom_ribbon(data = curva, aes(y = valor, xmin = 0, xmax = densidad),
-#               inherit.aes = FALSE, orientation = "y", fill = "grey93") +
-#   geom_path(data = curva, color = "grey60") +
-#   geom_hline(data = limites, aes(yintercept = inf), linetype = "dashed") +
-#   geom_hline(data = limites, aes(yintercept = sup), linetype = "dashed") +
-#   geom_point(aes(color = grupo), size = 1.3,
-#              position = position_jitter(width = 0.001, height = 0, seed = 123)) +
-#   formato_densidad(col_atipicos)
-#
-# grafico_densidad
+```{r preparar_densidad_cscore, include=FALSE}
+rasgos <- c(big_five, "impulsive", "ss")
+valores_cscore <- atipicos %>% filter(variable == "cscore")
+x <- valores_cscore$valor
+limites_cscore <- tibble(
+  metodo = c("sigma", "hampel", "boxplot"),
+  inf = c(mean(x) - 3 * sd(x), median(x) - 3 * mad(x),
+          quantile(x, 0.25) - 1.5 * IQR(x)),
+  sup = c(mean(x) + 3 * sd(x), median(x) + 3 * mad(x),
+          quantile(x, 0.75) + 1.5 * IQR(x))
+)
+d <- density(x)
+curva_cscore <- tibble(valor = d$x, densidad = d$y)
+puntos_cscore <- valores_cscore %>%
+  pivot_longer(c(sigma, hampel, boxplot),
+               names_to = "metodo", values_to = "atipico") %>%
+  mutate(
+    densidad = approx(d$x, d$y, xout = valor)$y,
+    grupo = case_when(
+      id %in% datos$id[datos$semer != "Never"] ~ "Declara Semeron",
+      atipico ~ "Atípico", TRUE ~ "Resto"
+    )
+  ) %>% arrange(grupo == "Declara Semeron")
 ```
 
-Los criterios difieren en la identificación de valores atípicos, por lo que se consideran herramientas de revisión y no reglas de exclusión automática. Estas observaciones se conservan, ya que su carácter extremo no constituye por sí solo evidencia de error y eliminarlas podría reducir la variabilidad de los perfiles psicológicos de la muestra.
+```{r fig_densidad_cscore, echo=FALSE, fig.width=7, fig.height=3, out.width="85%", fig.pos="H", fig.cap="Distribución de cscore y límites de cada criterio (líneas discontinuas)."}
+ggplot(puntos_cscore, aes(densidad, valor)) +
+  geom_ribbon(data = curva_cscore, aes(y = valor, xmin = 0, xmax = densidad),
+              inherit.aes = FALSE, orientation = "y", fill = "grey93") +
+  geom_path(data = curva_cscore, color = "grey60") +
+  geom_hline(data = limites_cscore, aes(yintercept = inf), linetype = "dashed") +
+  geom_hline(data = limites_cscore, aes(yintercept = sup), linetype = "dashed") +
+  geom_point(aes(color = grupo), size = 1,
+             position = position_jitter(width = 0.001, height = 0, seed = 123)) +
+  facet_wrap(~ metodo, labeller = as_labeller(
+    c(sigma = "Tres sigma", hampel = "Hampel", boxplot = "Boxplot"))) +
+  scale_color_manual(values = col_atipicos) +
+  labs(x = "Densidad estimada", y = "cscore") +
+  tema_aed + theme(legend.text = element_text(size = 8))
+```
 
-## Correlaciones entre personalidad y consumo
+El ejemplo de `cscore` muestra cómo el criterio boxplot establece un límite inferior más alto y señala más puntuaciones bajas que los otros métodos. Los participantes que declararon consumo de `semeron`, conservados pero señalados como potencialmente poco fiables, tampoco resultan atípicos en esta variable, como muestran los puntos en azul oscuro. Esto distingue los problemas de fiabilidad de las respuestas de la presencia de puntuaciones extremas y, por tanto, estas observaciones se convervan, ya que su carácter extremo no constituye por sí solo evidencia de error y eliminarlas podría reducir la variabilidad de los perfiles psicológicos de la muestra.
+
+## Rasgos psicológicos y último consumo de sustancias
+
+Para explorar cómo se asocian los rasgos psicológicos con el último
+consumo declarado de cada sustancia, se calculan correlaciones de
+Spearman. Las categorías ordenadas incluyen desde «Nunca» hasta «Último
+día», por lo que los coeficientes positivos indican una asociación con
+categorías de consumo más recientes y los negativos, con menos recientes.
 
 ```{r correlaciones_sustancias, warning=FALSE, message=FALSE}
 sustancias_cor <- setdiff(substances, "semer")
@@ -768,9 +792,14 @@ correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
 matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 ```
 
-```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías de recencia del consumo."}
+```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.pos="H", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
 dibujar_correlaciones(matriz_sustancias)
 ```
+
+En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido por varias sustancias, con asociaciones positivas con la búsqueda de sensaciones y negativas con la responsabilidad. La apertura también forma parte de este patrón, especialmente en cannabis, setas y LSD. Esto sugiere que determinadas características psicológicas se relacionan con categorías de consumo más recientes, aunque la intensidad de esa relación depende de la sustancia.
+
+El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se observó en el análisis univariante, presentan un consumo reciente muy extendido. Esta presencia generalizada puede reducir el contraste entre participantes con distintos perfiles psicológicos, contribuyendo a las correlaciones próximas a cero.
+
 
 ## Descripción de la muestra y preparación de comparaciones
 
