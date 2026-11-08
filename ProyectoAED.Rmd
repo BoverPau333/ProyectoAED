@@ -32,24 +32,9 @@ simplesummary: |
   de consumo reciente entre grupos sociodemográficos y se examinan sus
   asociaciones con rasgos de personalidad y policonsumo.
 abstract: |
-  El objetivo del estudio es explorar la asociación entre características
-  sociodemográficas, rasgos de personalidad y consumo de sustancias en el
-  conjunto de datos público Drug Consumption (Quantified) de UCI. Se analizan
-  1.885 observaciones mediante limpieza y recodificación de variables,
-  reconstrucción de puntuaciones del Big Five, clasificación de sustancias,
-  estadística descriptiva y correlaciones de Spearman. El consumo reciente
-  se define a partir de la última ocasión de consumo declarada, y sus
-  proporciones se comparan por edad, género, etnia y educación. También se
-  estudian los valores atípicos, las respuestas a una sustancia ficticia
-  y el policonsumo. El análisis documenta diferencias descriptivas entre
-  grupos y asociaciones de algunos rasgos psicológicos con el consumo,
-  particularmente la búsqueda de sensaciones. Dado el carácter transversal
-  de la muestra y las diferencias entre subgrupos, los resultados no
-  permiten establecer relaciones causales ni generalizar directamente las
-  prevalencias a la población general.
+  El objetivo de este estudio es explorar las asociaciones entre características sociodemográficas, rasgos de personalidad y consumo de sustancias en el conjunto de datos público *Drug Consumption (Quantified)* de UCI. Se analizan 1.885 participantes mediante preprocesamiento de variables, estadística descriptiva y correlaciones de Spearman. Se comparan las proporciones de consumo durante los últimos doce meses según edad, género, etnia y nivel educativo, y se examinan los valores atípicos, la fiabilidad de las respuestas y el policonsumo. Los resultados muestran un menor consumo reciente en los grupos de mayor edad y diferencias por género, así como porcentajes inferiores entre participantes con titulaciones superiores, cuya interpretación podría estar condicionada por la edad. En el análisis psicológico destacan las asociaciones positivas de la búsqueda de sensaciones y la apertura a la experiencia con categorías de consumo más recientes en determinadas sustancias; la búsqueda de sensaciones también se relaciona positivamente con el número de sustancias consumidas. Estas asociaciones son descriptivas y no permiten establecer causalidad ni extrapolar directamente los porcentajes a la población general.
 keywords: |
-  análisis exploratorio de datos; consumo de sustancias; Big Five;
-  impulsividad; búsqueda de sensaciones; prevalencia; policonsumo
+  Drug consumption; Exploratory data analysis; Personality traits; Sociodemographic factors; Recent substance use; Polydrug use
 dataavailability: |
   Los datos analizados proceden del repositorio público UCI Machine Learning
   Repository, [Drug Consumption (Quantified)](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified)
@@ -84,13 +69,14 @@ comportamientos.
 El objetivo de este trabajo es analizar cómo varía el consumo según el
 perfil de los participantes, prestando especial atención a la edad, el
 género, la etnia y el nivel educativo. Asimismo, se estudia la relación
-de los rasgos psicológicos con el último consumo de cada sustancia y
-con el policonsumo, buscando identificar asociaciones sin establecer
+de los rasgos psicológicos con el último consumo de cada sustancia y con
+el policonsumo, buscando identificar asociaciones sin establecer
 relaciones causales.
 
 # Materiales y métodos
 
-En este apartado se describen las fuentes de datos y los procedimientos utilizados para preparar las variables antes del análisis.
+En este apartado se describen las fuentes de datos y los procedimientos
+utilizados para preparar las variables antes del análisis.
 
 ```{r mdpi_setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -503,7 +489,9 @@ patrones de consumo de sustancias.
 
 ## Caracterización univariante de la muestra
 
-Como primer paso, se examina por separado la distribución de las variables categóricas (sociodemográficas y de consumo), utilizando medidas y representaciones adecuadas a su tipo.
+Como primer paso, se examina por separado la distribución de las
+variables categóricas (sociodemográficas y de consumo), utilizando
+medidas y representaciones adecuadas a su tipo.
 
 ### Variables sociodemográficas
 
@@ -575,7 +563,9 @@ basadas en muestras reducidas.
 
 ### Variables de consumo
 
-Tras describir el perfil de los participantes, se analizan las tres sustancias con mayor y menor porcentaje de consumo durante el último año, junto con sus porcentajes de consumo alguna vez en la vida.
+Tras describir el perfil de los participantes, se analizan las tres
+sustancias con mayor y menor porcentaje de consumo durante el último
+año, junto con sus porcentajes de consumo alguna vez en la vida.
 
 ```{r resumen_periodo_consumo}
 resumen_consumo <- datos_consumo %>%
@@ -601,22 +591,32 @@ El predominio de chocolate, cafeína y alcohol refleja su presencia en los hábi
 
 ## Control de calidad y detección de valores atípicos
 
-Antes de examinar las relaciones entre variables, se revisan posibles problemas de fiabilidad en las respuestas y puntuaciones psicológicas extremas, para determinar si requieren algún tratamiento.
+Antes de examinar las relaciones entre variables, se revisan posibles
+problemas de fiabilidad en las respuestas y puntuaciones psicológicas
+extremas, para determinar si requieren algún tratamiento.
 
 ### Fiabilidad de las respuestas
 
-En la encuesta, algunos participantes declararon haber consumido la sustancia fictia `semeron`,  lo que plantea dudas sobre la fiabilidad de sus respuestas,
-aunque no permite afirmar que el resto de la información sea falsa.
+En la encuesta, algunos participantes declararon haber consumido la
+sustancia fictia `semeron`, lo que plantea dudas sobre la fiabilidad de
+sus respuestas, aunque no permite afirmar que el resto de la información
+sea falsa.
 
 ```{r control_semeron}
 sum(datos$semer != "Never")
 ```
 
-Al identificar estos casos, se obtienen **ocho participantes**, que representan una **proporción reducida** de la muestra, aunque se mantienen identificados como respuestas poco fiables.
+Al identificar estos casos, se obtienen **ocho participantes**, que
+representan una **proporción reducida** de la muestra, aunque se
+mantienen identificados como respuestas poco fiables.
 
 ### Detección de valores atípicos
 
-A continuación, se aplican los criterios de **tres sigma**, **Hampel** y **boxplot** a las puntuaciones psicológicas para identificar valores atípicos que podrían influir en el análisis posterior, donde los casos señalados se revisarán para determinar si corresponden a errores o a perfiles extremos válidos, sin eliminarlos automáticamente.
+A continuación, se aplican los criterios de **tres sigma**, **Hampel** y
+**boxplot** a las puntuaciones psicológicas para identificar valores
+atípicos que podrían influir en el análisis posterior, donde los casos
+señalados se revisarán para determinar si corresponden a errores o a
+perfiles extremos válidos, sin eliminarlos automáticamente.
 
 ```{r deteccion_atipicos}
 rasgos <- c(big_five, "impulsive", "ss")
@@ -694,7 +694,16 @@ ggplot(puntos_cscore, aes(densidad, valor)) +
   tema_aed + theme(legend.text = element_text(size = 8))
 ```
 
-El ejemplo de `cscore` muestra cómo el criterio boxplot establece un límite inferior más alto y señala más puntuaciones bajas que los otros métodos. Los participantes que declararon consumo de `semeron`, conservados pero señalados como potencialmente poco fiables, tampoco resultan atípicos en esta variable, como muestran los puntos en azul oscuro. Esto distingue los problemas de fiabilidad de las respuestas de la presencia de puntuaciones extremas y, por tanto, estas observaciones se convervan, ya que su carácter extremo no constituye por sí solo evidencia de error y eliminarlas podría reducir la variabilidad de los perfiles psicológicos de la muestra.
+El ejemplo de `cscore` muestra cómo el criterio boxplot establece un
+límite inferior más alto y señala más puntuaciones bajas que los otros
+métodos. Los participantes que declararon consumo de `semeron`,
+conservados pero señalados como potencialmente poco fiables, tampoco
+resultan atípicos en esta variable, como muestran los puntos en azul
+oscuro. Esto distingue los problemas de fiabilidad de las respuestas de
+la presencia de puntuaciones extremas y, por tanto, estas observaciones
+se convervan, ya que su carácter extremo no constituye por sí solo
+evidencia de error y eliminarlas podría reducir la variabilidad de los
+perfiles psicológicos de la muestra.
 
 ## Rasgos psicológicos y último consumo de sustancias
 
@@ -702,7 +711,8 @@ Para explorar cómo se asocian los rasgos psicológicos con el último
 consumo declarado de cada sustancia, se calculan correlaciones de
 Spearman. Las categorías ordenadas incluyen desde «Nunca» hasta «Último
 día», por lo que los coeficientes positivos indican una asociación con
-categorías de consumo más recientes y los negativos, con menos recientes.
+categorías de consumo más recientes y los negativos, con menos
+recientes.
 
 ```{r correlaciones_sustancias, warning=FALSE, message=FALSE}
 sustancias_cor <- setdiff(substances, "semer")
@@ -718,10 +728,19 @@ matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 dibujar_correlaciones(matriz_sustancias)
 ```
 
-En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido por varias sustancias, con asociaciones positivas con la búsqueda de sensaciones y negativas con la responsabilidad. La apertura también forma parte de este patrón, especialmente en cannabis, setas y LSD. Esto sugiere que determinadas características psicológicas se relacionan con categorías de consumo más recientes, aunque la intensidad de esa relación depende de la sustancia.
+En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido
+por varias sustancias, con asociaciones positivas con la búsqueda de
+sensaciones y negativas con la responsabilidad. La apertura también
+forma parte de este patrón, especialmente en cannabis, setas y LSD. Esto
+sugiere que determinadas características psicológicas se relacionan con
+categorías de consumo más recientes, aunque la intensidad de esa
+relación depende de la sustancia.
 
-El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se observó en el análisis univariante, presentan un consumo reciente muy extendido. Esta presencia generalizada puede reducir el contraste entre participantes con distintos perfiles psicológicos, contribuyendo a las correlaciones próximas a cero.
-
+El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se
+observó en el análisis univariante, presentan un consumo reciente muy
+extendido. Esta presencia generalizada puede reducir el contraste entre
+participantes con distintos perfiles psicológicos, contribuyendo a las
+correlaciones próximas a cero.
 
 ## Consumo reciente según características sociodemográficas
 
@@ -817,11 +836,34 @@ grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
 grafico_edad_familias
 ```
 
-La Figura \ref{fig:consumo_edad} muestra que **el consumo reciente declarado es generalmente menor en los grupos de mayor edad**, aunque las diferencias dependen de la sustancia. Los **cannabinoides presentan la mayor diferencia entre jóvenes y mayores**, seguidos de psicodélicos, estimulantes y empatógenos. En varias familias, las mayores caídas aparecen entre los grupos de 18–24 y 25–34 años. El **alcohol y la nicotina mantienen una presencia considerable en todas las edades**. En cambio, psicodélicos, estimulantes, empatógenos y disociativos presentan porcentajes observados nulos en el último grupo. Estas cifras indican consumo durante los últimos doce meses, pero no permiten conocer su frecuencia, cantidad ni la existencia de dependencia.
+La Figura \ref{fig:consumo_edad} muestra que **el consumo reciente
+declarado es generalmente menor en los grupos de mayor edad**, aunque
+las diferencias dependen de la sustancia. Los **cannabinoides presentan
+la mayor diferencia entre jóvenes y mayores**, seguidos de psicodélicos,
+estimulantes y empatógenos. En varias familias, las mayores caídas
+aparecen entre los grupos de 18–24 y 25–34 años. El **alcohol y la
+nicotina mantienen una presencia considerable en todas las edades**. En
+cambio, psicodélicos, estimulantes, empatógenos y disociativos presentan
+porcentajes observados nulos en el último grupo. Estas cifras indican
+consumo durante los últimos doce meses, pero no permiten conocer su
+frecuencia, cantidad ni la existencia de dependencia.
 
-La principal excepción al descenso general aparece en los **depresores, cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de 65**. Una posible explicación sería la presencia de benzodiacepinas y su uso por prescripción, aunque esta hipótesis no puede comprobarse con la gráfica. También se observa un pequeño repunte de cannabinoides del 26 % al 28 %, que podría deberse a variabilidad muestral y no necesariamente a una tendencia real.
+La principal excepción al descenso general aparece en los **depresores,
+cuyo consumo aumenta del 11 % entre 55–64 años al 22 % en mayores de
+65**. Una posible explicación sería la presencia de benzodiacepinas y su
+uso por prescripción, aunque esta hipótesis no puede comprobarse con la
+gráfica. También se observa un pequeño repunte de cannabinoides del 26 %
+al 28 %, que podría deberse a variabilidad muestral y no necesariamente
+a una tendencia real.
 
-Finalmente, las diferencias deben interpretarse con cautela porque **se comparan personas distintas, no la evolución de los mismos participantes**. La escasa representación de mayores de 65 años hace que unas pocas respuestas modifiquen considerablemente sus porcentajes, y **un 0 % no demuestra ausencia de consumo en la población**. Por tanto, los resultados muestran una *asociación descriptiva entre edad y consumo en esta muestra*, pero **no permiten afirmar que envejecer provoque su abandono** ni generalizar directamente las cifras a toda la población.
+Finalmente, las diferencias deben interpretarse con cautela porque **se
+comparan personas distintas, no la evolución de los mismos
+participantes**. La escasa representación de mayores de 65 años hace que
+unas pocas respuestas modifiquen considerablemente sus porcentajes, y
+**un 0 % no demuestra ausencia de consumo en la población**. Por tanto,
+los resultados muestran una *asociación descriptiva entre edad y consumo
+en esta muestra*, pero **no permiten afirmar que envejecer provoque su
+abandono** ni generalizar directamente las cifras a toda la población.
 
 ### Género
 
@@ -838,16 +880,19 @@ grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>%
 grafico_genero
 ```
 
-En la Figura \ref{fig:consumo_genero} se observa como el chocolate, la cafeína y el alcohol presentan
-porcentajes de consumo muy elevados y casi solapados entre
-hombres y mujeres. **La nicotina constituye una excepción entre las
-sustancias de consumo socialmente extendido**, ya que muestra un
-porcentaje claramente superior en los hombres. En el resto de las sustancias representadas también se observa mayor
-consumo reciente declarado entre los hombres. La separación es
-especialmente visible en cannabis y *legal highs*, seguidas de
-sustancias como éxtasis, anfetaminas y setas. Las mayores diferencias en puntos porcentuales aparecen en sustancias con un
-consumo relativamente extendido, fuera del grupo de las más consumidas. En las sustancias menos consumidas, como heroína, sustancias volátiles y
-crack, los porcentajes de ambos grupos se vuelven a aproximar. Sin embargo, **una
+En la Figura \ref{fig:consumo_genero} se observa como el chocolate, la
+cafeína y el alcohol presentan porcentajes de consumo muy elevados y
+casi solapados entre hombres y mujeres. **La nicotina constituye una
+excepción entre las sustancias de consumo socialmente extendido**, ya
+que muestra un porcentaje claramente superior en los hombres. En el
+resto de las sustancias representadas también se observa mayor consumo
+reciente declarado entre los hombres. La separación es especialmente
+visible en cannabis y *legal highs*, seguidas de sustancias como
+éxtasis, anfetaminas y setas. Las mayores diferencias en puntos
+porcentuales aparecen en sustancias con un consumo relativamente
+extendido, fuera del grupo de las más consumidas. En las sustancias
+menos consumidas, como heroína, sustancias volátiles y crack, los
+porcentajes de ambos grupos se vuelven a aproximar. Sin embargo, **una
 diferencia absoluta pequeña no implica necesariamente una diferencia
 relativa pequeña**: cuando el consumo es poco frecuente, unos pocos
 puntos porcentuales pueden representar una proporción considerable.
