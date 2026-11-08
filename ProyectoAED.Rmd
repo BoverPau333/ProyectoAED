@@ -46,11 +46,13 @@ editor_options:
 header-includes:
   - \providecommand{\pandocbounded}[1]{#1}
   - \usepackage{lmodern}
-  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
   - \usepackage{etoolbox}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
   - \AtBeginEnvironment{verbatim}{\scriptsize}
-  - \AtBeginDocument{\renewcommand{\normalsize}{\fontsize{8}{9}\selectfont}\normalsize}
-  
+  - \AtBeginDocument{\renewcommand{\normalsize}{\fontsize{8}{8.75}\selectfont}\normalsize}
+  - \AtBeginDocument{\raggedbottom}
+  - \AtBeginDocument{\setlength{\textfloatsep}{4pt}\setlength{\floatsep}{2pt}\setlength{\intextsep}{4pt}}
+  - \fvset{listparameters={\setlength{\topsep}{3pt}\setlength{\partopsep}{0pt}}}
 ---
 
 # Introducción
@@ -391,9 +393,7 @@ scores <- list( nscore = 12:60, escore = c(16, 18:56, 58:59),
   oscore = c(24, 26, 28:60), ascore = c(12, 16, 18, 23:60), cscore = c(17, 19:57, 59))
 
 for (v in big_five) {
-  datos[[v]] <- scores[[v]][
-    match(datos[[v]], sort(unique(datos[[v]])))
-  ]
+  datos[[v]] <- scores[[v]][match(datos[[v]], sort(unique(datos[[v]])))]
 }
 ```
 
@@ -452,12 +452,9 @@ y su último consumo. Se conservan las características personales
 y se incorpora la familia farmacológica mediante `left_join()`.
 
 ```{r construccion_datos_families, results="hide", warning=FALSE, message=FALSE}
-datos_families <- datos %>%
-  pivot_longer(
-    cols = all_of(uci_classification$substance),
-    names_to = "substance", values_to = "consumption"
-  ) %>%
-  left_join(uci_classification, by = "substance")
+datos_families <- datos %>% pivot_longer(cols = all_of(uci_classification$substance),
+                                         names_to = "substance", values_to = "consumption"
+  ) %>% left_join(uci_classification, by = "substance")
 ```
 
 A partir de esta estructura, se crea `datos_consumo`, excluyendo las filas de `semeron` por tratarse de una sustancia ficticia. Además, se define el consumo reciente como el declarado durante los últimos doce meses y una función para resumirlo mediante frecuencias y porcentajes por grupo.
@@ -497,18 +494,13 @@ desequilibrios de representación.
 ```{r resumen_sociodemografico}
 var_socio <- c("age", "gender", "country", "education", "ethnicity")
 
-resumen_socio <- datos %>%
-  select(all_of(var_socio)) %>%
+resumen_socio <- datos %>% select(all_of(var_socio)) %>%
   mutate(across(everything(), as.character)) %>%
   pivot_longer(everything(), names_to = "variable", values_to = "categoria") %>%
-  count(variable, categoria) %>%
-  group_by(variable) %>%
-  mutate(
-    orden = match(categoria, levels(datos[[first(variable)]])),
-    frecuencia = sprintf("%d (%.1f%%)", n, 100 * n / sum(n))
-  ) %>%
-  ungroup() %>%
-  arrange(match(variable, var_socio), orden)
+  count(variable, categoria) %>% group_by(variable) %>%
+  mutate(orden = match(categoria, levels(datos[[first(variable)]])),
+  frecuencia = sprintf("%d (%.1f%%)", n, 100 * n / sum(n))) %>% 
+  ungroup() %>% arrange(match(variable, var_socio), orden)
 ```
 
 ```{r tabla_sociodemografica, echo=FALSE, results='asis', tab.cap="Distribución sociodemográfica de la muestra."}
@@ -717,7 +709,7 @@ correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
 matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 ```
 
-```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.pos="!htbp", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
+```{r fig_corr_sustancias, fig.width=9,echo=FALSE, fig.height=4.5, fig.pos="!htbp", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
 dibujar_correlaciones(matriz_sustancias)
 ```
 
@@ -749,11 +741,7 @@ datos_consumo_familias <- datos_consumo %>%
             else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 ```
 
-### Edad
-
-```{r resumen_consumo_edad}
-consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
-```
+### Relación entre la edad y el consumo reciente
 
 ```{r, echo=FALSE}
 etiquetas_familias <- c(
@@ -785,18 +773,14 @@ formato_edad <- function(colores, edades, rotulos) {
 ```
 
 ```{r}
+consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
+consumo_adicional <- resumir_consumo(datos_consumo %>% 
+  filter(substance %in% c("nicotine", "alcohol")),"age", "substance") %>%
+  rename(panel = substance)
 
-consumo_adicional <- resumir_consumo(
-  datos_consumo %>% filter(substance %in% c("nicotine", "alcohol")),
-  "age", "substance"
-) %>% rename(panel = substance)
-
-lineas <- bind_rows(
-  consumo_edad_familias %>% rename(panel = family), consumo_adicional
-) %>%
-  filter(panel %in% paneles) %>%
-  mutate(x = match(as.character(age), edades))
-
+lineas <- bind_rows(consumo_edad_familias %>% 
+  rename(panel = family), consumo_adicional) %>%
+  filter(panel %in% paneles) %>% mutate(x = match(as.character(age), edades))
 ```
 
 ```{r include=FALSE}
@@ -860,10 +844,8 @@ abandono** ni generalizar directamente las cifras a toda la población.
 
 ### Relación entre el género y el consumo reciente
 
-```{r resumen_consumo_genero}
-consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
-```
 ```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales.\\label{fig:consumo_genero}"}
+consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
   geom_line(aes(group = substance), color = "grey75", linewidth = 1, orientation = "y")+
@@ -891,10 +873,6 @@ relativa pequeña**: cuando el consumo es poco frecuente, unos pocos
 puntos porcentuales pueden representar una proporción considerable.
 
 ## Consumo reciente según nivel educativo
-
-```{r resumen_consumo_educacion}
-consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
-```
 
 Como se puede observar en la Figura \ref{fig:consumo_educacion}, existe
 una tendencia general al aumento del consumo de sustancias en los
@@ -933,6 +911,7 @@ formato_educacion <- function(colores) {
 ```
 
 ```{r fig_consumo_educacion, out.width="85%", fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia.\\label{fig:consumo_educacion}"}
+consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
 grafico_educacion <- ggplot(
   consumo_educacion, aes(education, porcentaje, color = family, group = family)) +
   geom_line(linewidth = 0.8) + geom_point(size = 2) + formato_educacion(col_familias)
