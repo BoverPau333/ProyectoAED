@@ -26,31 +26,25 @@ output:
   pdf_document: default
 type: article
 status: submit
-simplesummary: |
-  Este artículo presenta una exploración reproducible de una encuesta sobre
-  consumo de sustancias y características personales. Se comparan porcentajes
-  de consumo reciente entre grupos sociodemográficos y se examinan sus
-  asociaciones con rasgos de personalidad y policonsumo.
 abstract: |
   El objetivo de este estudio es explorar las asociaciones entre características sociodemográficas, rasgos de personalidad y consumo de sustancias en el conjunto de datos público *Drug Consumption (Quantified)* de UCI. Se analizan 1.885 participantes mediante preprocesamiento de variables, estadística descriptiva y correlaciones de Spearman. Se comparan las proporciones de consumo durante los últimos doce meses según edad, género, etnia y nivel educativo, y se examinan los valores atípicos, la fiabilidad de las respuestas y el policonsumo. Los resultados muestran un menor consumo reciente en los grupos de mayor edad y diferencias por género, así como porcentajes inferiores entre participantes con titulaciones superiores, cuya interpretación podría estar condicionada por la edad. En el análisis psicológico destacan las asociaciones positivas de la búsqueda de sensaciones y la apertura a la experiencia con categorías de consumo más recientes en determinadas sustancias; la búsqueda de sensaciones también se relaciona positivamente con el número de sustancias consumidas. Estas asociaciones son descriptivas y no permiten establecer causalidad ni extrapolar directamente los porcentajes a la población general.
 keywords: |
   Drug consumption; Exploratory data analysis; Personality traits; Sociodemographic factors; Recent substance use; Polydrug use
-dataavailability: |
-  Los datos analizados proceden del repositorio público UCI Machine Learning
-  Repository, [Drug Consumption (Quantified)](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified)
-abbreviations: [{short: UCI, long: "University of California, Irvine"}, {short: EDA, long: "Exploratory Data Analysis"}, {short: BIS-11, long: "Barratt Impulsiveness Scale"}]
 endnotes: false
 editor_options:
   markdown:
     wrap: 72
 header-includes:
+  - \renewcommand{\PublishersNote}{}
   - \providecommand{\pandocbounded}[1]{#1}
   - \usepackage{lmodern}
-  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
   - \usepackage{etoolbox}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
   - \AtBeginEnvironment{verbatim}{\scriptsize}
-  - \AtBeginDocument{\renewcommand{\normalsize}{\fontsize{8}{9}\selectfont}\normalsize}
-  
+  - \AtBeginDocument{\renewcommand{\normalsize}{\fontsize{8}{8.75}\selectfont}\normalsize}
+  - \AtBeginDocument{\raggedbottom}
+  - \AtBeginDocument{\setlength{\textfloatsep}{4pt}\setlength{\floatsep}{2pt}\setlength{\intextsep}{4pt}}
+  - \fvset{listparameters={\setlength{\topsep}{3pt}\setlength{\partopsep}{0pt}}}
 ---
 
 # Introducción
@@ -195,14 +189,10 @@ Asimismo, se obtienen los metadatos para identificar las variables.
 
 ```{r descarga_datos, warning=FALSE, message=FALSE, results="hide"}
 dir.create("data", showWarnings = FALSE)
-
-# Descargamos el archivo comprimido del dataset desde UCI.
 download.file(url = url_UCI, destfile = "data/drug_consumption.zip",mode = "wb")
 
 unzip("data/drug_consumption.zip", exdir = "data")
-
 datos <- read.csv("data/drug_consumption.data",header = FALSE,stringsAsFactors = FALSE)
-#Descargamos tambien los metadatos del dataset
 metadatos <- jsonlite::fromJSON("https://archive.ics.uci.edu/api/dataset?id=373")
 ```
 
@@ -325,7 +315,7 @@ valores ausentes y registros duplicados que pudieran afectar a los
 resultados del análisis.
 
 ```{r comprobar_integridad, include = TRUE}
-c( ausentes = sum(is.na(datos)),
+c(ausentes = sum(is.na(datos)),
   ids_duplicados = sum(duplicated(datos$id)),
   filas_duplicadas = sum(duplicated(select(datos, -id))) )
 ```
@@ -392,9 +382,7 @@ scores <- list( nscore = 12:60, escore = c(16, 18:56, 58:59),
   oscore = c(24, 26, 28:60), ascore = c(12, 16, 18, 23:60), cscore = c(17, 19:57, 59))
 
 for (v in big_five) {
-  datos[[v]] <- scores[[v]][
-    match(datos[[v]], sort(unique(datos[[v]])))
-  ]
+  datos[[v]] <- scores[[v]][match(datos[[v]], sort(unique(datos[[v]])))]
 }
 ```
 
@@ -452,12 +440,9 @@ y su último consumo. Se conservan las características personales
 y se incorpora la familia farmacológica mediante `left_join()`.
 
 ```{r construccion_datos_families, results="hide", warning=FALSE, message=FALSE}
-datos_families <- datos %>%
-  pivot_longer(
-    cols = all_of(uci_classification$substance),
-    names_to = "substance", values_to = "consumption"
-  ) %>%
-  left_join(uci_classification, by = "substance")
+datos_families <- datos %>% pivot_longer(cols = all_of(uci_classification$substance),
+                                         names_to = "substance", values_to = "consumption"
+  ) %>% left_join(uci_classification, by = "substance")
 ```
 
 A partir de esta estructura, se crea `datos_consumo`, excluyendo las filas de `semeron` por tratarse de una sustancia ficticia. Además, se define el consumo reciente como el declarado durante los últimos doce meses y una función para resumirlo mediante frecuencias y porcentajes por grupo.
@@ -497,18 +482,13 @@ desequilibrios de representación.
 ```{r resumen_sociodemografico}
 var_socio <- c("age", "gender", "country", "education", "ethnicity")
 
-resumen_socio <- datos %>%
-  select(all_of(var_socio)) %>%
+resumen_socio <- datos %>% select(all_of(var_socio)) %>%
   mutate(across(everything(), as.character)) %>%
   pivot_longer(everything(), names_to = "variable", values_to = "categoria") %>%
-  count(variable, categoria) %>%
-  group_by(variable) %>%
-  mutate(
-    orden = match(categoria, levels(datos[[first(variable)]])),
-    frecuencia = sprintf("%d (%.1f%%)", n, 100 * n / sum(n))
-  ) %>%
-  ungroup() %>%
-  arrange(match(variable, var_socio), orden)
+  count(variable, categoria) %>% group_by(variable) %>%
+  mutate(orden = match(categoria, levels(datos[[first(variable)]])),
+  frecuencia = sprintf("%d (%.1f%%)", n, 100 * n / sum(n))) %>% 
+  ungroup() %>% arrange(match(variable, var_socio), orden)
 ```
 
 ```{r tabla_sociodemografica, echo=FALSE, results='asis', tab.cap="Distribución sociodemográfica de la muestra."}
@@ -717,7 +697,7 @@ correlaciones <- cor(datos_cor, method = "spearman", use = "complete.obs")
 matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 ```
 
-```{r fig_corr_sustancias, fig.width=9, fig.height=4.5, fig.pos="!htbp", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
+```{r fig_corr_sustancias, fig.width=9,echo=FALSE, fig.height=4.5, fig.pos="!htbp", fig.cap="Correlaciones de Spearman entre rasgos psicológicos y categorías del último consumo declarado.\\label{fig:personalidad_consumo}"}
 dibujar_correlaciones(matriz_sustancias)
 ```
 
@@ -747,11 +727,7 @@ datos_consumo_familias <- datos_consumo %>%
             else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 ```
 
-### Edad
-
-```{r resumen_consumo_edad}
-consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
-```
+### Relación entre la edad y el consumo reciente
 
 ```{r, echo=FALSE}
 etiquetas_familias <- c(
@@ -762,39 +738,18 @@ etiquetas_familias <- c(
 )
 
 edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
-
 paneles <- names(col_paneles)
-
-formato_edad <- function(colores, edades, rotulos) {
-  list(
-    facet_wrap(~ panel, ncol = 3, labeller = as_labeller(rotulos)),
-    scale_color_manual(values = colores),
-    scale_fill_manual(values = colores),
-    scale_x_continuous(breaks = seq_along(edades), labels = edades,
-                       expand = expansion(mult = c(0.08, 0.08))),
-    scale_y_continuous(limits = c(0, 112), breaks = c(0, 50, 100),
-                       labels = porcentaje_eje),
-    labs(x = "Grupo de edad", y = "Consumo reciente (%)"),
-    theme(legend.position = "none", panel.grid.major.x = element_blank(),
-          axis.text.x = element_text(angle = 45, hjust = 1))
-  )
-}
-
 ```
 
 ```{r}
+consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
+consumo_adicional <- resumir_consumo(datos_consumo %>% 
+  filter(substance %in% c("nicotine", "alcohol")),"age", "substance") %>%
+  rename(panel = substance)
 
-consumo_adicional <- resumir_consumo(
-  datos_consumo %>% filter(substance %in% c("nicotine", "alcohol")),
-  "age", "substance"
-) %>% rename(panel = substance)
-
-lineas <- bind_rows(
-  consumo_edad_familias %>% rename(panel = family), consumo_adicional
-) %>%
-  filter(panel %in% paneles) %>%
-  mutate(x = match(as.character(age), edades))
-
+lineas <- bind_rows(consumo_edad_familias %>% 
+  rename(panel = family), consumo_adicional) %>%
+  filter(panel %in% paneles) %>% mutate(x = match(as.character(age), edades))
 ```
 
 ```{r include=FALSE}
@@ -811,10 +766,23 @@ lineas <- lineas %>% mutate(panel = factor(panel, levels = titulos$panel))
 rotulos <- setNames(titulos$titulo, titulos$panel)
 fondo <- lineas %>% rename(serie = panel)
 
+formato_edad <- function(colores, edades, rotulos) {
+  list(
+    facet_wrap(~ panel, ncol = 3, labeller = as_labeller(rotulos)),
+    scale_color_manual(values = colores),
+    scale_fill_manual(values = colores),
+    scale_x_continuous(breaks = seq_along(edades), labels = edades,
+                       expand = expansion(mult = c(0.08, 0.08))),
+    scale_y_continuous(limits = c(0, 112), breaks = c(0, 50, 100),
+                       labels = porcentaje_eje),
+    labs(x = "Grupo de edad", y = "Consumo reciente (%)"),
+    theme(legend.position = "none", panel.grid.major.x = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1))
+  )
+}
 ```
 
 ```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales.\\label{fig:consumo_edad}" }
-
 grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
   geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.5) +
   geom_area(aes(fill = panel), alpha = 0.1) +
@@ -858,10 +826,8 @@ abandono** ni generalizar directamente las cifras a toda la población.
 
 ### Relación entre el género y el consumo reciente
 
-```{r resumen_consumo_genero}
-consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
-```
 ```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales.\\label{fig:consumo_genero}"}
+consumo_genero <-  resumir_consumo(datos_consumo, "gender", "substance")
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
   ggplot(aes(porcentaje, reorder(substance, porcentaje, FUN = mean))) + 
   geom_line(aes(group = substance), color = "grey75", linewidth = 1, orientation = "y")+
@@ -890,8 +856,26 @@ puntos porcentuales pueden representar una proporción considerable.
 
 ## Consumo reciente según nivel educativo
 
-```{r resumen_consumo_educacion}
+```{r  include=FALSE}
+formato_educacion <- function(colores) {
+  list(
+    scale_color_manual(values = colores),
+    scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 25),
+                       labels = porcentaje_eje),
+    labs(x = NULL, y = "Consumo reciente (%)"),
+    guides(color = guide_legend(nrow = 2, byrow = TRUE)),
+    theme(legend.position = "bottom",
+          axis.text.x = element_text(angle = 40, hjust = 1),
+          panel.grid.major.x = element_blank())
+  )
+}
+```
+
+```{r fig_consumo_educacion, out.width="85%", fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia.\\label{fig:consumo_educacion}"}
 consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
+ggplot(
+  consumo_educacion, aes(education, porcentaje, color = family, group = family)) +
+  geom_line(linewidth = 0.8) + geom_point(size = 2) + formato_educacion(col_familias)
 ```
 
 Como se puede observar en la Figura \ref{fig:consumo_educacion}, existe
@@ -914,66 +898,24 @@ el consumo de sustancias, no podemos concluir que una mayor formación
 académica implique directamente un menor consumo sin considerar la
 influencia de la edad.
 
-```{r  include=FALSE}
 
-formato_educacion <- function(colores) {
-  list(
-    scale_color_manual(values = colores),
-    scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 25),
-                       labels = porcentaje_eje),
-    labs(x = NULL, y = "Consumo reciente (%)"),
-    guides(color = guide_legend(nrow = 2, byrow = TRUE)),
-    theme(legend.position = "bottom",
-          axis.text.x = element_text(angle = 40, hjust = 1),
-          panel.grid.major.x = element_blank())
-  )
-}
-```
-
-```{r fig_consumo_educacion, out.width="85%", fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia.\\label{fig:consumo_educacion}"}
-ggplot(
-  consumo_educacion, aes(education, porcentaje, color = family, group = family)) +
-  geom_line(linewidth = 0.8) + geom_point(size = 2) + formato_educacion(col_familias)
-```
 
 ## Impulsividad, búsqueda de sensaciones y policonsumo
 
-Al igual que en fases anteriores del análisis, para el estudio de la
-relación entre el policonsumo y los rasgos psicológicos se excluyen
-sustancias adictivas que, tanto hombres como mujeres, han mostrado un
-consumo lo suficientemente elevado como para no ser informativo al
-compararlo con el resto.
-
-En este caso, se elimina el alcohol, la cafeina, el chocolate y el
-semeron. De esta manera, calculamos el nimero de sustancias diferentes
-consumidas por cada participante, conservando sus puntuaciones de
-impulsividad (`impulsive`) y búsqueda de sensaciones (`ss`).
+Para estudiar la relación de ambos rasgos con la diversidad del consumo, se contabiliza el número de sustancias utilizadas durante el último año, excluyendo alcohol, cafeína y chocolate por su consumo generalizado tanto en hombres como mujeres. Además, este recuento se agrupa en cuatro categorías: ninguna sustancia (`0`), una (`1`), dos o tres (`2-3`) y cuatro o más (`4+`), sin que ninguna quede poco representada.
 
 ```{r medida_policonsumo, warning=FALSE, message=FALSE}
+policonsumo <- datos_consumo %>%
+  filter(!substance %in% c("alcohol", "caff", "choc")) %>%
+  group_by(id) %>%
+  summarise(
+    n_sustancias = sum(reciente),
+    across(c(impulsive, ss), first), .groups = "drop"
+  ) %>%
+  mutate(grupo = cut(n_sustancias, c(-Inf, 0, 1, 3, Inf),
+                     labels = c("0", "1", "2-3", "4+")))
 
-policonsumo <- datos_consumo %>% filter(!substance %in% c("alcohol", "caff", "choc")) %>%
-  group_by(id) %>% summarise(n_sustancias = sum(reciente), across(c(impulsive, cscore, ss), first), .groups = "drop")
-
-summary(policonsumo$n_sustancias)
-```
-
-El resumen estadístico del conjunto de datos preparado para el análisis
-muestra que, aproximadamente, la media de sustancias consumidas por
-persona, tomando como referencia los datos recogidos, es 3. Además, el
-número de sustancias consideradas va desde 0 hasta 14, donde, a medida
-que aumenta reduce la cantidad de observaciones asociadas.
-
-De esta manera, consideramos y establecemos cuatro grupos de consumo
-para el estudio: participantes sin consumo reciente de las sustancias
-seleccionadas (`0`), consumidores de una única sustancia (`1`),
-consumidores de dos o tres (`2-3`), y consumidores de cuatro o más
-(`4+`), que representan el **28,12 %, 14,59 % , 17,56 % y 39,73 %** de
-la muestra, respectivamente.
-
-```{r grupos_policonsumo, warning=FALSE, message=FALSE}
-policonsumo <- policonsumo %>% mutate(grupo = cut(n_sustancias,
-                    breaks = c(-Inf, 0, 1, 3, Inf), labels = c("0", "1", "2-3", "4+")))
-
+table(policonsumo$grupo)
 policonsumo_grafico <- policonsumo %>%
   pivot_longer(c(impulsive, ss), names_to = "rasgo", values_to = "valor")
 
@@ -995,24 +937,15 @@ etiquetas_rasgos <- c( impulsive = sprintf("impulsive\nSpearman: %.3f", rho_imp)
   ss = sprintf("ss\nSpearman: %.3f", rho_ss))
 ```
 
-```{r fig_psicometria_policonsumo, out.width="85%", fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo. Los títulos muestran la correlación de Spearman con el número de sustancias consumidas."}
+```{r fig_psicometria_policonsumo, out.width="75%", fig.cap="Impulsividad y búsqueda de sensaciones según policonsumo."}
 ggplot(policonsumo_grafico, aes(grupo, valor, fill = grupo)) +
   geom_boxplot(width = 0.6, alpha = 0.8, outlier.size = 1) +
   formato_psicometria(col_consumo, etiquetas_rasgos)
 ```
 
-En la Figura \ref{fig:fig_psicometria_policonsumo} se observa una **asociación positiva entre ambos rasgos
-psicológicos y el número de sustancias consumidas**, aunque con
-diferencias en su comportamiento.
+En la Figura \ref{fig:fig_psicometria_policonsumo}, la búsqueda de sensaciones diferencia mejor los grupos, ya que sus puntuaciones tienden a aumentar conforme crece el número de sustancias consumidas, en consonancia con su mayor correlación de Spearman. En cambio, la impulsividad distingue principalmente al grupo de cuatro o más sustancias, mientras que los demás presentan medianas similares.
 
-Por un lado, las distribuciones de la **impulsividad** están solapadas,
-especialmente, entre los participantes que consumen una o mas
-sustancias.
-
-Por el contrario, la **búsqueda de sensaciones** muestra una tendencia
-positiva y progresiva tanto en las medianas como los cuartiles,
-diferencia que también se observa en las correlaciones de Spearman,
-siendo mayor que la asociación de la impulsividad.
+No obstante, las distribuciones se solapan, por lo que participantes con puntuaciones similares pueden presentar distintos niveles de consumo. Estas asociaciones tampoco aíslan la posible influencia de la edad, relacionada con el consumo en el análisis anterior, ni permiten establecer causalidad o afirmar que las sustancias se hayan utilizado simultáneamente.
 
 # Conclusiones
 
