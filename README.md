@@ -31,33 +31,6 @@ El consumo reciente corresponde a los últimos doce meses. El policonsumo se est
 
 La carpeta `data/` se crea al ejecutar el documento. El PDF y otros archivos de compilación se generan localmente y están incluidos en las reglas de exclusión de Git.
 
-## Generar el informe
-
-Se necesita R, Pandoc (incluido en RStudio) y una distribución LaTeX. La ejecución requiere conexión a Internet para descargar los datos, consultar los metadatos de UCI y obtener la clasificación complementaria.
-
-1. Descargar o clonar el repositorio completo, conservando la carpeta `Definitions/`.
-2. Instalar los paquetes desde la consola de R:
-
-   ```r
-   install.packages(c("rmarkdown", "rticles", "tidyverse", "knitr",
-                      "rvest", "corrplot", "jsonlite", "scales"))
-   ```
-
-3. Si no se dispone de LaTeX, instalar TinyTeX una sola vez:
-
-   ```r
-   install.packages("tinytex")
-   tinytex::install_tinytex()
-   ```
-
-4. Desde la carpeta raíz del proyecto, ejecutar:
-
-   ```r
-   rmarkdown::render("ProyectoAED.Rmd", output_format = "rticles::mdpi_article")
-   ```
-
-   También puede abrirse `ProyectoAED.Rmd` en RStudio y compilar con el formato `rticles::mdpi_article`. El resultado se guarda como `ProyectoAED.pdf`.
-
 ## Autores
 
 - Pau Bover Femenias.
