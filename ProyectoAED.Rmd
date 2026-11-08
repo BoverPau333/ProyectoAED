@@ -22,6 +22,7 @@ authorcitation: |
   Bover Femenias, P.; Oliver Catany, F.; Fernandez Perez, M.
 output:
   rticles::mdpi_article:
+     template: Definitions/aed-template.tex
      extra_dependencies: ["longtable", "xurl", "fvextra", "float"]
   pdf_document: default
 type: article
@@ -35,6 +36,9 @@ editor_options:
   markdown:
     wrap: 72
 header-includes:
+  - \titlespacing{\section}{0pt}{10pt}{3pt}
+  - \titlespacing{\subsection}{0pt}{10pt}{3pt}
+  - \titlespacing{\subsubsection}{0pt}{10pt}{3pt}
   - \renewcommand{\PublishersNote}{}
   - \providecommand{\pandocbounded}[1]{#1}
   - \usepackage{lmodern}
@@ -219,7 +223,7 @@ dim(datos)
 ```
 
 El conjunto contiene **1.885 observaciones** y **32 columnas**, una de
-las cuales corresponde al identificador de cada registro
+las cuales corresponde al identificador de cada registro.
 
 Dado que el fichero original carece de cabeceras identificativas, se
 recuperan los nombres reales de las variables mediante los metadatos ya
@@ -365,14 +369,10 @@ datos <- datos %>%
 
 ### Transformación de variables psicológicas
 
-La interpretación de las variables psicológicas puede facilitarse
-recuperando las puntuaciones originales del *Big Five* y normalizando
+La interpretación de las variables psicológicas se facilita 
+recuperando las puntuaciones originales del *Big Five*, evitando una transformación lineal que no permitiría recuperarlas
+exactamente, y normalizando
 las escalas de impulsividad (BIS-11) y búsqueda de sensaciones (ImpSS).
-
-Para el *Big Five*, se relacionan los valores transformados, ordenados
-de menor a mayor, con las puntuaciones originales documentadas por UCI,
-evitando una transformación lineal que no permitiría recuperarlas
-exactamente.
 
 ```{r recuperacion_big_five, results="hide", warning=FALSE, message=FALSE}
 big_five <- c("nscore", "escore", "oscore", "ascore", "cscore")
@@ -386,9 +386,9 @@ for (v in big_five) {
 }
 ```
 
-Por su parte, las variables de impulsividad y búsqueda de sensaciones se
-normalizan mediante una transformación **MinMax**, situando sus valores
-en el intervalo [0, 1] para facilitar su comparación.
+Por su parte, la impulsividad y la búsqueda de sensaciones se reescalan 
+mediante una transformación **MinMax** al intervalo [0, 1], para representarlas
+en una escala numérica común y facilitar su comparación.
 
 ```{r normalizacion_impulsividad_ss, results="hide", warning=FALSE, message=FALSE}
 datos <- datos %>% mutate(across(c(impulsive, ss), rescale))
@@ -420,7 +420,7 @@ datos <- datos %>% mutate(across(all_of(substances),
 A partir de las siete familias de *The Drugs Wheel*, se establece una
 correspondencia con las sustancias del conjunto UCI. Dado que algunas no
 pueden asignarse directamente a estas familias, se incorpora la
-categoría   `Other`, para `legalh`, y `Fake`, para `semer`.
+categoría `Other`, para `legalh`, y `Fake`, para `semer`.
 
 ```{r familias_sustancias, include = TRUE, warning=FALSE, message=FALSE}
 families <- c(classification$Name, "Other", "Fake" )
@@ -701,13 +701,8 @@ matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 dibujar_correlaciones(matriz_sustancias)
 ```
 
-En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido
-por varias sustancias, con asociaciones positivas con la búsqueda de
-sensaciones y negativas con la responsabilidad. La apertura también
-forma parte de este patrón, especialmente en cannabis, setas y LSD. Esto
-sugiere que determinadas características psicológicas se relacionan con
-categorías de consumo más recientes, aunque la intensidad de esa
-relación depende de la sustancia.
+
+En la Figura \ref{fig:personalidad_consumo}, el consumo más reciente de varias sustancias se asocia con una mayor búsqueda de sensaciones y una menor responsabilidad, mientras que la apertura destaca especialmente en cannabis, setas y LSD. Estas asociaciones apuntan a una relación del consumo con la búsqueda de experiencias nuevas y estimulantes y con un menor grado de planificación y autocontrol, cuya intensidad varía según la sustancia.
 
 El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se
 observó en el análisis univariante, presentan un consumo reciente muy
@@ -718,11 +713,10 @@ correlaciones próximas a cero.
 ## Consumo reciente según características sociodemográficas
 
 ```{r preparar_consumo_familias}
-excluir_familias <- c("alcohol", "caff", "nicotine", "choc", "semer", "legalh")
-
-datos_consumo_familias <- datos_consumo %>%
-  filter(!substance %in% excluir_familias, !is.na(family)) %>%
-  group_by(id, age, gender, education, country, ethnicity, family) %>%
+datos_familias_seleccionadas <- datos_consumo %>%
+  filter(!substance %in% c("alcohol", "caff", "nicotine", "choc", "semer", "legalh"),
+         !is.na(family)) %>%
+  group_by(id, age, gender, education, family) %>%
   summarise(reciente = if (any(reciente, na.rm = TRUE)) TRUE
             else if (anyNA(reciente)) NA else FALSE, .groups = "drop")
 ```
@@ -730,6 +724,21 @@ datos_consumo_familias <- datos_consumo %>%
 ### Relación entre la edad y el consumo reciente
 
 ```{r, echo=FALSE}
+edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
+```
+
+```{r}
+consumo_edad_familias <- resumir_consumo(datos_familias_seleccionadas, "age", "family")
+consumo_edad_adicional <- resumir_consumo(datos_consumo %>% 
+  filter(substance %in% c("nicotine", "alcohol")),"age", "substance") %>%
+  rename(panel = substance)
+
+lineas <- bind_rows(consumo_edad_familias %>% 
+  rename(panel = family), consumo_edad_adicional) %>%
+  mutate(x = match(as.character(age), edades))
+```
+
+```{r include=FALSE}
 etiquetas_familias <- c(
   Cannabinoids = "Cannabinoides", Depressants = "Depresores",
   Dissociatives = "Disociativos", Empathogens = "Empatógenos",
@@ -737,22 +746,6 @@ etiquetas_familias <- c(
   Stimulants = "Estimulantes", nicotine = "nicotine", alcohol = "alcohol"
 )
 
-edades <- c("18-24", "25-34", "35-44", "45-54", "55-64", "65+")
-paneles <- names(col_paneles)
-```
-
-```{r}
-consumo_edad_familias <- resumir_consumo(datos_consumo_familias, "age", "family")
-consumo_adicional <- resumir_consumo(datos_consumo %>% 
-  filter(substance %in% c("nicotine", "alcohol")),"age", "substance") %>%
-  rename(panel = substance)
-
-lineas <- bind_rows(consumo_edad_familias %>% 
-  rename(panel = family), consumo_adicional) %>%
-  filter(panel %in% paneles) %>% mutate(x = match(as.character(age), edades))
-```
-
-```{r include=FALSE}
 titulos <- lineas %>%
   filter(x %in% c(1, 6)) %>%
   select(panel, x, porcentaje) %>%
@@ -782,7 +775,7 @@ formato_edad <- function(colores, edades, rotulos) {
 }
 ```
 
-```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad. Cada panel destaca una familia o sustancia; las restantes aparecen en gris. Los títulos indican la diferencia entre 65+ y 18-24 en puntos porcentuales.\\label{fig:consumo_edad}" }
+```{r fig_consumo_edad, fig.width=9, fig.height=7, out.width="85%", fig.cap="Consumo reciente por edad.\\label{fig:consumo_edad}" }
 grafico_edad_familias <- ggplot(lineas, aes(x, porcentaje, group = panel)) +
   geom_line(data = fondo, aes(group = serie), color = "grey88", linewidth = 0.5) +
   geom_area(aes(fill = panel), alpha = 0.1) +
@@ -854,7 +847,7 @@ diferencia absoluta pequeña no implica necesariamente una diferencia
 relativa pequeña**: cuando el consumo es poco frecuente, unos pocos
 puntos porcentuales pueden representar una proporción considerable.
 
-## Consumo reciente según nivel educativo
+### Relación entre el nivel educativo y el consumo reciente
 
 ```{r  include=FALSE}
 formato_educacion <- function(colores) {
@@ -872,7 +865,7 @@ formato_educacion <- function(colores) {
 ```
 
 ```{r fig_consumo_educacion, out.width="85%", fig.cap="Consumo reciente por familia y nivel educativo. Cada porcentaje representa a quienes consumieron alguna sustancia de la familia.\\label{fig:consumo_educacion}"}
-consumo_educacion <- resumir_consumo(datos_consumo_familias, "education", "family")
+consumo_educacion <- resumir_consumo(datos_familias_seleccionadas, "education", "family")
 ggplot(
   consumo_educacion, aes(education, porcentaje, color = family, group = family)) +
   geom_line(linewidth = 0.8) + geom_point(size = 2) + formato_educacion(col_familias)
@@ -943,9 +936,9 @@ ggplot(policonsumo_grafico, aes(grupo, valor, fill = grupo)) +
   formato_psicometria(col_consumo, etiquetas_rasgos)
 ```
 
-En la Figura \ref{fig:fig_psicometria_policonsumo}, la búsqueda de sensaciones diferencia mejor los grupos, ya que sus puntuaciones tienden a aumentar conforme crece el número de sustancias consumidas, en consonancia con su mayor correlación de Spearman. En cambio, la impulsividad distingue principalmente al grupo de cuatro o más sustancias, mientras que los demás presentan medianas similares.
+En la Figura \ref{fig:fig_psicometria_policonsumo}, la búsqueda de sensaciones diferencia mejor los grupos, ya que sus puntuaciones tienden a aumentar conforme crece el número de sustancias consumidas, en consonancia con su mayor correlación de Spearman. Su asociación, por tanto, aparece tanto en el último consumo de varias sustancias analizadas individualmente como en la diversidad del consumo anual. En cambio, la impulsividad distingue principalmente al grupo de cuatro o más sustancias, mientras que los demás presentan medianas similares.
 
-No obstante, las distribuciones se solapan, por lo que participantes con puntuaciones similares pueden presentar distintos niveles de consumo. Estas asociaciones tampoco aíslan la posible influencia de la edad, relacionada con el consumo en el análisis anterior, ni permiten establecer causalidad o afirmar que las sustancias se hayan utilizado simultáneamente.
+No obstante, las distribuciones se solapan, por lo que participantes con puntuaciones similares pueden presentar distintos niveles de policonsumo. Estas asociaciones tampoco aíslan la posible influencia de la edad, relacionada con el consumo en el análisis anterior, ni permiten establecer causalidad o afirmar que las sustancias se hayan utilizado simultáneamente.
 
 # Conclusiones
 
