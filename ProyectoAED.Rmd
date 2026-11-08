@@ -42,8 +42,7 @@ abstract: |
   proporciones se comparan por edad, género, etnia y educación. También se
   estudian los valores atípicos, las respuestas a una sustancia ficticia
   y el policonsumo. El análisis documenta diferencias descriptivas entre
-  grupos y asociaciones de algunos rasgos psicológicos con el consumo,
-  particularmente la búsqueda de sensaciones. Dado el carácter transversal
+  grupos y asociaciones de algunos rasgos psicológicos con el consumo. Dado el carácter transversal
   de la muestra y las diferencias entre subgrupos, los resultados no
   permiten establecer relaciones causales ni generalizar directamente las
   prevalencias a la población general.
@@ -53,13 +52,7 @@ keywords: |
 dataavailability: |
   Los datos analizados proceden del repositorio público UCI Machine Learning
   Repository, [Drug Consumption (Quantified)](https://archive.ics.uci.edu/dataset/373/drug+consumption+quantified)
-abbreviations:
-  - short: UCI
-    long: University of California, Irvine
-  - short: EDA
-    long: Exploratory Data Analysis
-  - short: BIS-11
-    long: Barratt Impulsiveness Scale
+abbreviations: [{short: UCI, long: "University of California, Irvine"}, {short: EDA, long: "Exploratory Data Analysis"}, {short: BIS-11, long: "Barratt Impulsiveness Scale"}]
 endnotes: false
 editor_options:
   markdown:
@@ -70,7 +63,8 @@ header-includes:
   - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
   - \usepackage{etoolbox}
   - \AtBeginEnvironment{verbatim}{\scriptsize}
-  - \AtBeginDocument{\renewcommand{\normalsize}{\fontsize{8.5}{11}\selectfont}\normalsize}
+  - \AtBeginDocument{\renewcommand{\normalsize}{\fontsize{8}{9}\selectfont}\normalsize}
+  
 ---
 
 # Introducción
@@ -349,11 +343,9 @@ valores ausentes y registros duplicados que pudieran afectar a los
 resultados del análisis.
 
 ```{r comprobar_integridad, include = TRUE}
-c(
-  ausentes = sum(is.na(datos)),
+c( ausentes = sum(is.na(datos)),
   ids_duplicados = sum(duplicated(datos$id)),
-  filas_duplicadas = sum(duplicated(select(datos, -id)))
-)
+  filas_duplicadas = sum(duplicated(select(datos, -id))) )
 ```
 
 Al no presentar ninguna de estas anomalías, no es necesario imputar
@@ -477,9 +469,6 @@ columna de consumo por sustancia. Para facilitar el análisis por
 sustancias y familias farmacológicas, se utiliza `pivot_longer()` para
 reorganizarlo en formato largo, agrupando las variables de consumo en
 dos columnas: la sustancia y la categoría temporal de su último consumo.
-Así, cada fila corresponde a un participante y una sustancia,
-conservándose las características sociodemográficas y psicológicas del
-participante.
 
 Finalmente, mediante `left_join()`, se incorpora la familia
 farmacológica correspondiente a cada sustancia, completando así el
@@ -772,7 +761,7 @@ ggplot(puntos_cscore, aes(densidad, valor)) +
   tema_aed + theme(legend.text = element_text(size = 8))
 ```
 
-El ejemplo de `cscore` muestra cómo el criterio boxplot establece un límite inferior más alto y señala más puntuaciones bajas que los otros métodos. Los participantes que declararon consumo de `semeron`, conservados pero señalados como potencialmente poco fiables, tampoco resultan atípicos en esta variable, como muestran los puntos en azul oscuro. Esto distingue los problemas de fiabilidad de las respuestas de la presencia de puntuaciones extremas y, por tanto, estas observaciones se convervan, ya que su carácter extremo no constituye por sí solo evidencia de error y eliminarlas podría reducir la variabilidad de los perfiles psicológicos de la muestra.
+El ejemplo de `cscore` muestra cómo el criterio boxplot establece un límite inferior más alto y señala más puntuaciones bajas que los otros métodos. Los participantes que declararon consumo de `semeron`, conservados pero señalados como potencialmente poco fiables, tampoco resultan atípicos en esta variable. Esto distingue los problemas de fiabilidad de las respuestas de la presencia de puntuaciones extremas y, por tanto, estas observaciones se convervan, ya que su carácter extremo no constituye por sí solo evidencia de error y eliminarlas podría reducir la variabilidad de los perfiles psicológicos de la muestra.
 
 ## Rasgos psicológicos y último consumo de sustancias
 
@@ -796,10 +785,7 @@ matriz_sustancias <- correlaciones[rasgos, sustancias_cor, drop = FALSE]
 dibujar_correlaciones(matriz_sustancias)
 ```
 
-En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido por varias sustancias, con asociaciones positivas con la búsqueda de sensaciones y negativas con la responsabilidad. La apertura también forma parte de este patrón, especialmente en cannabis, setas y LSD. Esto sugiere que determinadas características psicológicas se relacionan con categorías de consumo más recientes, aunque la intensidad de esa relación depende de la sustancia.
-
-El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se observó en el análisis univariante, presentan un consumo reciente muy extendido. Esta presencia generalizada puede reducir el contraste entre participantes con distintos perfiles psicológicos, contribuyendo a las correlaciones próximas a cero.
-
+En la Figura \ref{fig:personalidad_consumo} destaca un patrón compartido por varias sustancias, con asociaciones positivas con la búsqueda de sensaciones y negativas con la responsabilidad. La apertura también forma parte de este patrón, especialmente en cannabis, setas y LSD. Esto sugiere que determinadas características psicológicas se relacionan con categorías de consumo más recientes, aunque la intensidad de esa relación depende de la sustancia. El patrón pierde fuerza en alcohol, cafeína y chocolate, que, como se observó en el análisis univariante, presentan un consumo reciente muy extendido reduciendo el contraste entre distintos perfiles.
 
 ## Descripción de la muestra y preparación de comparaciones
 
@@ -814,7 +800,7 @@ datos_consumo <- datos_families %>%
 
 ## Consumo reciente según características sociodemográficas
 
-### Edad
+### Relación entre la edad y el consumo reciente
 
 ```{r, echo=FALSE}
 etiquetas_familias <- c(
@@ -896,7 +882,7 @@ La principal excepción al descenso general aparece en los **depresores, cuyo co
 
 Finalmente, las diferencias deben interpretarse con cautela porque **se comparan personas distintas, no la evolución de los mismos participantes**. La escasa representación de mayores de 65 años hace que unas pocas respuestas modifiquen considerablemente sus porcentajes, y **un 0 % no demuestra ausencia de consumo en la población**. Por tanto, los resultados muestran una *asociación descriptiva entre edad y consumo en esta muestra*, pero **no permiten afirmar que envejecer provoque su abandono** ni generalizar directamente las cifras a toda la población.
 
-### Género
+### Relación entre el género y el consumo reciente
 
 ```{r fig_consumo_genero,fig.width=5, fig.height=3, out.width="85%", fig.cap="Consumo reciente por género y sustancia. La separación entre puntos representa la diferencia en puntos porcentuales.\\label{fig:consumo_genero}"}
 grafico_genero <- consumo_genero %>% filter(!is.na(porcentaje)) %>% 
